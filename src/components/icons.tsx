@@ -5,7 +5,6 @@ import {
   IconChevronLeft,
   IconChevronRight,
   IconCommand,
-  IconCreditCard,
   IconFile,
   IconFileText,
   IconHelpCircle,
@@ -15,7 +14,6 @@ import {
   IconLoader2,
   IconLogin,
   IconProps,
-  IconShoppingBag,
   IconMoon,
   IconDotsVertical,
   IconPizza,
@@ -29,16 +27,11 @@ import {
   IconUserEdit,
   IconUserX,
   IconX,
-  IconLayoutKanban,
   IconBrandGithub,
   IconFolder,
   IconUsers,
-  IconCrown,
-  IconStar,
-  IconBox,
   IconPalette,
-  IconBell,
-  IconMessage
+  IconBell
 } from '@tabler/icons-react';
 
 export type Icon = React.ComponentType<IconProps>;
@@ -48,10 +41,8 @@ export const Icons = {
   logo: IconCommand,
   login: IconLogin,
   close: IconX,
-  product: IconBox,
   palette: IconPalette,
   spinner: IconLoader2,
-  kanban: IconLayoutKanban,
   chevronLeft: IconChevronLeft,
   chevronRight: IconChevronRight,
   trash: IconTrash,
@@ -62,7 +53,6 @@ export const Icons = {
   user2: IconUserCircle,
   media: IconPhoto,
   settings: IconSettings,
-  billing: IconCreditCard,
   ellipsis: IconDotsVertical,
   add: IconPlus,
   warning: IconAlertTriangle,
@@ -78,10 +68,7 @@ export const Icons = {
   check: IconCheck,
   workspace: IconFolder,
   teams: IconUsers,
-  pro: IconCrown,
-  exclusive: IconStar,
   account: IconUserCircle,
   profile: IconUser,
-  notification: IconBell,
-  chat: IconMessage
+  notification: IconBell
 };
