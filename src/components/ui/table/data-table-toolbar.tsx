@@ -14,12 +14,14 @@ import { Cross2Icon } from '@radix-ui/react-icons';
 
 interface DataTableToolbarProps<TData> extends React.ComponentProps<'div'> {
   table: Table<TData>;
+  searchBar?: React.ReactNode;
 }
 
 export function DataTableToolbar<TData>({
   table,
   children,
   className,
+  searchBar,
   ...props
 }: DataTableToolbarProps<TData>) {
   const isFiltered = table.getState().columnFilters.length > 0;
@@ -44,6 +46,7 @@ export function DataTableToolbar<TData>({
       {...props}
     >
       <div className='flex flex-1 flex-wrap items-center gap-2'>
+        {searchBar}
         {columns.map((column) => (
           <DataTableToolbarFilter key={column.id} column={column} />
         ))}

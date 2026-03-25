@@ -8,21 +8,28 @@ import { memberFormSchema, type MemberFormValues } from '../schemas/member.schem
 export async function getMembers({
   page = 1,
   perPage = 10,
-  search,
+  fullName,
+  email,
+  phone,
   status
 }: {
   page?: number;
   perPage?: number;
-  search?: string;
+  fullName?: string;
+  email?: string;
+  phone?: string;
   status?: string;
 }) {
   const where: Record<string, unknown> = {};
 
-  if (search) {
-    where.OR = [
-      { fullName: { contains: search, mode: 'insensitive' } },
-      { email: { contains: search, mode: 'insensitive' } }
-    ];
+  if (fullName) {
+    where.fullName = { contains: fullName, mode: 'insensitive' };
+  }
+  if (email) {
+    where.email = { contains: email, mode: 'insensitive' };
+  }
+  if (phone) {
+    where.phone = { contains: phone, mode: 'insensitive' };
   }
 
   if (status) {

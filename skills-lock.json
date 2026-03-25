@@ -16,6 +16,11 @@
       "sourceType": "github",
       "computedHash": "515ba75178bd44875812d9a560bdf14651f86709f89cf1d4f209638e879807f3"
     },
+    "nextjs-developer": {
+      "source": "jeffallan/claude-skills",
+      "sourceType": "github",
+      "computedHash": "574c295ef59cdc324c390920f9a0e26cc908dc43493b973cf265ba7d913a94f2"
+    },
     "shadcn": {
       "source": "shadcn/ui",
       "sourceType": "github",

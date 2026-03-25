@@ -23,7 +23,9 @@ export default async function MembersPage({ searchParams }: MembersPageProps) {
   const { members, total, pageCount } = await getMembers({
     page: params.page,
     perPage: params.perPage,
-    search: params.name ?? undefined,
+    fullName: params.fullName ?? undefined,
+    email: params.email ?? undefined,
+    phone: params.phone ?? undefined,
     status: params.status ?? undefined
   });
 

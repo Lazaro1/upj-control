@@ -23,21 +23,38 @@ const statusVariant: Record<
 
 export const columns: ColumnDef<MemberSerializable>[] = [
   {
+    id: 'fullName',
     accessorKey: 'fullName',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Nome' />
-    )
+    ),
+    enableColumnFilter: true
   },
   {
+    id: 'email',
     accessorKey: 'email',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='E-mail' />
-    )
+    ),
+    enableColumnFilter: true
   },
   {
+    id: 'phone',
     accessorKey: 'phone',
     header: 'Telefone',
-    cell: ({ row }) => row.original.phone || '—'
+    enableColumnFilter: true,
+    cell: ({ row }) => {
+      const p = row.original.phone;
+      if (!p) return '—';
+      const numbers = p.replace(/\D/g, '');
+      if (numbers.length === 11) {
+        return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7)}`;
+      }
+      if (numbers.length === 10) {
+        return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 6)}-${numbers.slice(6)}`;
+      }
+      return p;
+    }
   },
   {
     id: 'status',

@@ -128,7 +128,24 @@ export function MemberForm({ initialData }: MemberFormProps) {
                 <FormItem>
                   <FormLabel>Telefone</FormLabel>
                   <FormControl>
-                    <Input placeholder='(00) 00000-0000' {...field} />
+                    <Input
+                      placeholder='(00) 00000-0000'
+                      {...field}
+                      onChange={(e) => {
+                        let val = e.target.value.replace(/\D/g, '');
+                        if (val.length > 11) val = val.slice(0, 11);
+                        if (val.length > 2) {
+                          val = `(${val.slice(0, 2)}) ${val.slice(2)}`;
+                        }
+                        if (val.length > 9) {
+                          val = `${val.slice(0, 10)}-${val.slice(10)}`;
+                        } else if (val.length > 8 && val.length <= 9) {
+                          // Allow formatting for 10 digits as well if needed, but mostly Brazilian mobile is 11
+                          val = val; 
+                        }
+                        field.onChange(val);
+                      }}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
