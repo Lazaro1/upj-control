@@ -82,10 +82,10 @@
 
 | Papel (Role) | Permissões esperadas |
 |--------------|----------------------|
-| `admin`      | Controle total do sistema, ajustes nas regras multi-lojas e setup de relatórios. |
-| `tesoureiro` | Criar membros, gerar cobranças, dar baixa em boletos, acessar base do portal. |
-| `diretoria`  | Visualizar dashboard e extrair relatórios (somente-leitura nas movimentações). |
-| `irmao`      | Acesso limitado unicamente ao Portal Individual para prestação de contas. |
+| `org:admin`      | Controle total do sistema, ajustes nas regras multi-lojas e setup de relatórios. |
+| `org:treasurer` | Criar membros, gerar cobranças, dar baixa em boletos, acessar base do portal. |
+| `org:manager`  | Visualizar dashboard e extrair relatórios (somente-leitura nas movimentações). |
+| `org:member`      | Acesso limitado unicamente ao Portal Individual para prestação de contas. |
 
 **Critério de conclusão:** Autenticação é garantida pelo Clerk sem necessidade de gerenciar senhas ou sessões na nossa DB local (`users`). A RBAC funciona restringindo acessos e o painel filtra visibilidade dependendo das 'permissions' providas na Org.
 

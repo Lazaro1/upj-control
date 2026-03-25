@@ -30,6 +30,7 @@ import {
   IconBrandGithub,
   IconFolder,
   IconUsers,
+  IconUsersGroup,
   IconPalette,
   IconBell
 } from '@tabler/icons-react';
@@ -68,6 +69,7 @@ export const Icons = {
   check: IconCheck,
   workspace: IconFolder,
   teams: IconUsers,
+  members: IconUsersGroup,
   account: IconUserCircle,
   profile: IconUser,
   notification: IconBell
