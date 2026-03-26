@@ -19,8 +19,8 @@
 
 | Parte | Descrição | Status | Data |
 |-------|-----------|--------|------|
-| 2.1 | Extrato individual | ⬜ Pendente | — |
-| 2.2 | Geração de PDF | ⬜ Pendente | — |
+| 2.1 | Extrato individual | ✅ Concluída | 2026-03-25 |
+| 2.2 | Geração de PDF | ✅ Concluída | 2026-03-25 |
 | 2.3 | Portal do irmão | ⬜ Pendente | — |
 | 2.4 | Cobranças recorrentes | ⬜ Pendente | — |
 
@@ -62,3 +62,15 @@
 - [x] Build validado (`npm run build` ✅)
 - [x] Subir banco com `docker compose up -d` *(manual pelo dev)*
 - [x] Rodar migration inicial `npx prisma migrate dev --name init` *(manual, requer Docker ativo)*
+
+### Parte 2.2 — Geração de PDF
+**Início:** 2026-03-25
+
+- [x] Instalar @react-pdf/renderer
+- [x] Criar serviço de geração de PDF (`pdf-service.tsx`)
+- [x] Template Extrato Individual (estilo bancário)
+- [x] Template Ficha Visual (estilo ficha física tradicional)
+- [x] Endpoint de download (`GET /api/members/[id]/extrato`)
+- [x] Suporte a parâmetros (`type=extrato` ou `type=ficha`)
+- [x] Logs de auditoria para geração de relatórios
+- [x] Botões de download integrados na visualização de extrato

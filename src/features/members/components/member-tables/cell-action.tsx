@@ -20,7 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle
 } from '@/components/ui/alert-dialog';
-import { IconDotsVertical, IconEdit, IconUserX } from '@tabler/icons-react';
+import { IconDotsVertical, IconEdit, IconUserX, IconReceipt } from '@tabler/icons-react';
 import { deleteMember } from '../../server/member.actions';
 import { toast } from 'sonner';
 import type { Member } from '@prisma/client';
@@ -61,6 +61,14 @@ export function CellAction({ member }: CellActionProps) {
           >
             <IconEdit className='mr-2 h-4 w-4' />
             Editar
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() =>
+              router.push(`/dashboard/members/${member.id}/statement`)
+            }
+          >
+            <IconReceipt className='mr-2 h-4 w-4' />
+            Extrato Financeiro
           </DropdownMenuItem>
           {member.status !== 'inativo' && (
             <DropdownMenuItem
