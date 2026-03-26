@@ -1,7 +1,6 @@
 import { searchParamsCache } from '@/lib/searchparams';
 import { getMembers } from '@/features/members/server/member.actions';
 import { MemberListing } from '@/features/members/components/member-listing';
-import { Breadcrumbs } from '@/components/breadcrumbs';
 import { Separator } from '@/components/ui/separator';
 import { Heading } from '@/components/ui/heading';
 import Link from 'next/link';
@@ -31,7 +30,6 @@ export default async function MembersPage({ searchParams }: MembersPageProps) {
 
   return (
     <div className='flex flex-1 flex-col gap-4 p-4 pt-0'>
-      <Breadcrumbs />
       <div className='flex items-start justify-between'>
         <Heading
           title={`Membros (${total})`}

@@ -30,6 +30,15 @@ export const navItems: NavItem[] = [
     access: { requireOrg: true }
   },
   {
+    title: 'Tipos de Cobrança',
+    url: '/dashboard/charge-types',
+    icon: 'billing',
+    isActive: false,
+    shortcut: ['t', 'c'],
+    items: [],
+    access: { requireOrg: true }
+  },
+  {
     title: 'Workspaces',
     url: '/dashboard/workspaces',
     icon: 'workspace',
