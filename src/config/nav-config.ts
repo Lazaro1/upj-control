@@ -39,6 +39,24 @@ export const navItems: NavItem[] = [
     access: { requireOrg: true }
   },
   {
+    title: 'Cobranças Manuais',
+    url: '/dashboard/charges',
+    icon: 'charges',
+    isActive: false,
+    shortcut: ['c', 'b'],
+    items: [],
+    access: { requireOrg: true }
+  },
+  {
+    title: 'Pagamentos',
+    url: '/dashboard/payments',
+    icon: 'payments',
+    isActive: false,
+    shortcut: ['p', 'g'],
+    items: [],
+    access: { requireOrg: true }
+  },
+  {
     title: 'Workspaces',
     url: '/dashboard/workspaces',
     icon: 'workspace',

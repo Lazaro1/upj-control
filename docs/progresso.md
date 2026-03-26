@@ -11,9 +11,9 @@
 | 1.1 | Infraestrutura base | ✅ Concluída | 2026-03-24 |
 | 1.2 | Autenticação e permissões (Clerk) | ✅ Concluída | 2026-03-25 |
 | 1.3 | Cadastro de irmãos | ✅ Concluída | 2026-03-25 |
-| 1.4 | Tipos de cobrança | ⬜ Pendente | — |
-| 1.5 | Cobranças manuais | ⬜ Pendente | — |
-| 1.6 | Pagamentos e baixa | ⬜ Pendente | — |
+| 1.4 | Tipos de cobrança | ✅ Concluída | 2026-03-25 |
+| 1.5 | Cobranças manuais | ✅ Concluída | 2026-03-25 |
+| 1.6 | Pagamentos e baixa | ✅ Concluída | 2026-03-25 |
 
 ## Fase 2 — Portal e recorrência
 

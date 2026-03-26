@@ -12,8 +12,15 @@ export const searchParams = {
   fullName: parseAsString,
   email: parseAsString,
   phone: parseAsString,
-  status: parseAsString
+  status: parseAsString,
+  memberId: parseAsString,
+  chargeTypeId: parseAsString,
+  dueDate: parseAsString,
+  paymentMethod: parseAsString
 };
 
 export const searchParamsCache = createSearchParamsCache(searchParams);
 export const serialize = createSerializer(searchParams);
+
+export type SearchParams = Record<string, string | string[] | undefined>;
+
