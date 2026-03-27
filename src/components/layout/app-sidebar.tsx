@@ -31,7 +31,7 @@ import {
 } from '@/components/ui/sidebar';
 import { UserAvatarProfile } from '@/components/user-avatar-profile';
 import { navItems } from '@/config/nav-config';
-import { useUser } from '@clerk/nextjs';
+import { useAuth, useUser } from '@clerk/nextjs';
 import { useFilteredNavItems } from '@/hooks/use-nav';
 import {
   IconBell,
@@ -50,24 +50,31 @@ export default function AppSidebar() {
   const pathname = usePathname();
   const { isMobile } = useSidebar();
   const { user } = useUser();
+  const { orgRole } = useAuth();
   const router = useRouter();
   const filteredItems = useFilteredNavItems(navItems);
+  const appSubtitle =
+    orgRole === 'org:member' ? 'Portal do Irmão' : 'Tesouraria';
 
   return (
     <Sidebar collapsible='icon'>
       <SidebarHeader className='group-data-[collapsible=icon]:pt-4'>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size='lg' disabled className="cursor-default hover:bg-transparent">
+            <SidebarMenuButton
+              size='lg'
+              disabled
+              className='cursor-default hover:bg-transparent'
+            >
               <div className='bg-primary text-primary-foreground flex aspect-square size-8 shrink-0 items-center justify-center rounded-lg shadow-md'>
                 <Icons.logo className='size-5' />
               </div>
               <div className='grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden'>
-                <span className='truncate font-semibold text-foreground'>
+                <span className='text-foreground truncate font-semibold'>
                   UPJ Control
                 </span>
                 <span className='text-muted-foreground truncate text-xs font-medium'>
-                  Tesouraria
+                  {appSubtitle}
                 </span>
               </div>
             </SidebarMenuButton>

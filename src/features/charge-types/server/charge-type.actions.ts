@@ -2,7 +2,10 @@
 
 import { prisma } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
-import { chargeTypeSchema, type ChargeTypeFormValues } from '../schemas/charge-type.schema';
+import {
+  chargeTypeSchema,
+  type ChargeTypeFormValues
+} from '../schemas/charge-type.schema';
 
 export async function getChargeTypes({
   page = 1,
@@ -82,7 +85,8 @@ export async function createChargeType(data: ChargeTypeFormValues) {
         recurringChargeRules: {
           create: {
             frequency: parsed.data.frequency || 'monthly',
-            amount: parsed.data.recurringAmount || parsed.data.defaultAmount || 0,
+            amount:
+              parsed.data.recurringAmount ?? parsed.data.defaultAmount ?? 0,
             active: true
           }
         }
@@ -122,7 +126,7 @@ export async function updateChargeType(id: string, data: ChargeTypeFormValues) {
         where: { id: existingRule.id },
         data: {
           frequency: parsed.data.frequency || 'monthly',
-          amount: parsed.data.recurringAmount || parsed.data.defaultAmount || 0,
+          amount: parsed.data.recurringAmount ?? parsed.data.defaultAmount ?? 0,
           active: true
         }
       });
@@ -131,11 +135,16 @@ export async function updateChargeType(id: string, data: ChargeTypeFormValues) {
         data: {
           chargeTypeId: id,
           frequency: parsed.data.frequency || 'monthly',
-          amount: parsed.data.recurringAmount || parsed.data.defaultAmount || 0,
+          amount: parsed.data.recurringAmount ?? parsed.data.defaultAmount ?? 0,
           active: true
         }
       });
     }
+  } else {
+    await prisma.recurringChargeRule.updateMany({
+      where: { chargeTypeId: id, active: true },
+      data: { active: false }
+    });
   }
 
   revalidatePath('/dashboard/charge-types');

@@ -25,8 +25,7 @@ export const metadata: Metadata = {
  * - Se email existe na tabela members mas sem clerkUserId → redireciona para verificação de CIM.
  * - Se email não existe na tabela members → redireciona para página de não autorizado.
  *
- * Roles admin/treasurer são isentos desta verificação, pois podem não estar
- * cadastrados como membros da loja.
+ * Roles administrativos são isentos desta verificação.
  */
 async function checkMemberAccess() {
   const { userId, orgRole } = await auth();
@@ -35,7 +34,7 @@ async function checkMemberAccess() {
   if (!userId) return;
 
   // Roles administrativos são isentos da verificação de CIM
-  const adminRoles = ['org:admin', 'org:treasurer'];
+  const adminRoles = ['org:admin', 'org:treasurer', 'org:manager'];
   if (orgRole && adminRoles.includes(orgRole)) return;
 
   // 1. Verificar se já existe vínculo pelo clerkUserId
@@ -103,4 +102,3 @@ export default async function DashboardLayout({
     </KBar>
   );
 }
-

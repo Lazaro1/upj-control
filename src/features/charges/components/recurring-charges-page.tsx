@@ -9,46 +9,74 @@ import {
   IconCalendar,
   IconCheck,
   IconClock,
-  IconCurrencyReal,
   IconUsers,
   IconRepeat,
   IconArrowRight,
   IconInfoCircle
 } from '@tabler/icons-react';
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  SelectValue
+} from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Calendar } from "@/components/ui/calendar";
+import { Calendar } from '@/components/ui/calendar';
 import {
   Popover,
   PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+  PopoverTrigger
+} from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 
-import { getRecurringChargeTypes, processBulkCharges, getProcessingPreview } from '../server/recurring-charges.actions';
+import {
+  getRecurringChargeTypes,
+  processBulkCharges,
+  getProcessingPreview
+} from '../server/recurring-charges.actions';
+
+interface RecurringRule {
+  id: string;
+  frequency: string;
+  amount: number;
+}
+
+interface RecurringChargeTypeOption {
+  id: string;
+  name: string;
+  defaultAmount: number;
+  rule: RecurringRule | null;
+}
+
+interface ProcessingPreview {
+  memberCount: number;
+}
 
 export function RecurringChargesPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [chargeTypes, setChargeTypes] = useState<any[]>([]);
-  
+  const [chargeTypes, setChargeTypes] = useState<RecurringChargeTypeOption[]>(
+    []
+  );
+
   // Form state
   const [selectedTypeId, setSelectedTypeId] = useState<string>('');
   const [month, setMonth] = useState<number>(new Date().getMonth() + 1);
   const [year, setYear] = useState<number>(new Date().getFullYear());
   const [dueDate, setDueDate] = useState<Date | undefined>(new Date());
-  const [preview, setPreview] = useState<{ memberCount: number } | null>(null);
+  const [preview, setPreview] = useState<ProcessingPreview | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -61,8 +89,15 @@ export function RecurringChargesPage() {
   useEffect(() => {
     if (selectedTypeId) {
       const loadPreview = async () => {
-        const pre = await getProcessingPreview(selectedTypeId);
-        setPreview(pre);
+        try {
+          const pre = await getProcessingPreview(selectedTypeId);
+          setPreview(pre);
+        } catch {
+          setPreview(null);
+          toast.error(
+            'Não foi possível carregar o preview deste tipo de cobrança.'
+          );
+        }
       };
       loadPreview();
     }
@@ -84,79 +119,99 @@ export function RecurringChargesPage() {
       });
 
       if (result.success) {
-        toast.success(`Sucesso: ${result.data?.createdCount} cobranças geradas. ${result.data?.skippedCount} já existiam.`);
+        toast.success(
+          `Sucesso: ${result.data?.createdCount} cobranças geradas. ${result.data?.skippedCount} já existiam.`
+        );
         router.push('/dashboard/charges');
         router.refresh();
       } else {
         toast.error(result.error);
       }
-    } catch (error) {
+    } catch {
       toast.error('Erro ao processar cobranças');
     } finally {
       setLoading(false);
     }
   };
 
-  const selectedType = chargeTypes.find(t => t.id === selectedTypeId);
+  const selectedType = chargeTypes.find((t) => t.id === selectedTypeId);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-2">
-        <h2 className="text-3xl font-bold tracking-tight">Lançamento em Massa</h2>
-        <p className="text-muted-foreground">
-          Gere cobranças recorrentes para todos os membros ativos da loja simultaneamente.
+    <div className='space-y-6'>
+      <div className='flex flex-col gap-2'>
+        <h2 className='text-3xl font-bold tracking-tight'>
+          Lançamento em Massa
+        </h2>
+        <p className='text-muted-foreground'>
+          Gere cobranças recorrentes para todos os membros ativos da loja
+          simultaneamente.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="md:col-span-2 border-border/50 bg-card/40 backdrop-blur-xl shadow-lg">
+      <div className='grid grid-cols-1 gap-6 md:grid-cols-3'>
+        <Card className='border-border/50 bg-card/40 shadow-lg backdrop-blur-xl md:col-span-2'>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <IconRepeat className="h-5 w-5 text-primary" />
+            <CardTitle className='flex items-center gap-2'>
+              <IconRepeat className='text-primary h-5 w-5' />
               Configuração do Lançamento
             </CardTitle>
-            <CardDescription>Defina as informações básicas para o processamento do lote.</CardDescription>
+            <CardDescription>
+              Defina as informações básicas para o processamento do lote.
+            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="chargeType">Tipo de Cobrança Recorrente</Label>
-                <Select onValueChange={setSelectedTypeId} value={selectedTypeId}>
-                  <SelectTrigger id="chargeType" className="h-11">
-                    <SelectValue placeholder="Selecione o tipo..." />
+          <CardContent className='space-y-6'>
+            <div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
+              <div className='space-y-2'>
+                <Label htmlFor='chargeType'>Tipo de Cobrança Recorrente</Label>
+                <Select
+                  onValueChange={setSelectedTypeId}
+                  value={selectedTypeId}
+                >
+                  <SelectTrigger id='chargeType' className='h-11'>
+                    <SelectValue placeholder='Selecione o tipo...' />
                   </SelectTrigger>
                   <SelectContent>
-                    {chargeTypes.map(t => (
-                      <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                    {chargeTypes.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.name}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 {selectedType && (
-                  <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                    <IconInfoCircle className="h-3 w-3" />
-                    Valor configurado na regra: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(selectedType.rule?.amount || 0)}
+                  <p className='text-muted-foreground mt-1 flex items-center gap-1 text-xs'>
+                    <IconInfoCircle className='h-3 w-3' />
+                    Valor configurado na regra:{' '}
+                    {new Intl.NumberFormat('pt-BR', {
+                      style: 'currency',
+                      currency: 'BRL'
+                    }).format(selectedType.rule?.amount || 0)}
                   </p>
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="dueDate">Data de Vencimento</Label>
+              <div className='space-y-2'>
+                <Label htmlFor='dueDate'>Data de Vencimento</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
-                      variant={"outline"}
+                      variant='outline'
                       className={cn(
-                        "w-full justify-start text-left font-normal h-11",
-                        !dueDate && "text-muted-foreground"
+                        'h-11 w-full justify-start text-left font-normal',
+                        !dueDate && 'text-muted-foreground'
                       )}
                     >
-                      <IconCalendar className="mr-2 h-4 w-4" />
-                      {dueDate ? format(dueDate, "PPP", { locale: ptBR }) : <span>Escolha uma data</span>}
+                      <IconCalendar className='mr-2 h-4 w-4' />
+                      {dueDate ? (
+                        format(dueDate, 'PPP', { locale: ptBR })
+                      ) : (
+                        <span>Escolha uma data</span>
+                      )}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
+                  <PopoverContent className='w-auto p-0' align='start'>
                     <Calendar
-                      mode="single"
+                      mode='single'
                       selected={dueDate}
                       onSelect={setDueDate}
                       initialFocus
@@ -169,11 +224,14 @@ export function RecurringChargesPage() {
 
             <Separator />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="month">Mês de Competência</Label>
-                <Select value={month.toString()} onValueChange={v => setMonth(parseInt(v))}>
-                  <SelectTrigger id="month" className="h-11">
+            <div className='grid grid-cols-1 gap-6 md:grid-cols-2'>
+              <div className='space-y-2'>
+                <Label htmlFor='month'>Mês de Competência</Label>
+                <Select
+                  value={month.toString()}
+                  onValueChange={(v) => setMonth(Number.parseInt(v, 10))}
+                >
+                  <SelectTrigger id='month' className='h-11'>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -186,27 +244,34 @@ export function RecurringChargesPage() {
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="year">Ano de Competência</Label>
+              <div className='space-y-2'>
+                <Label htmlFor='year'>Ano de Competência</Label>
                 <Input
-                  id="year"
-                  type="number"
-                  className="h-11"
+                  id='year'
+                  type='number'
+                  className='h-11'
                   value={year}
-                  onChange={e => setYear(parseInt(e.target.value))}
+                  onChange={(e) => {
+                    const parsedYear = Number.parseInt(e.target.value, 10);
+                    if (!Number.isNaN(parsedYear)) {
+                      setYear(parsedYear);
+                    }
+                  }}
                 />
               </div>
             </div>
 
-            <div className="pt-4 flex justify-end">
-              <Button 
-                onClick={handleProcess} 
+            <div className='flex justify-end pt-4'>
+              <Button
+                onClick={handleProcess}
                 disabled={loading || !selectedTypeId}
-                className="h-11 px-8 gap-2 shadow-md hover:shadow-lg transition-all"
+                className='h-11 gap-2 px-8 shadow-md transition-all hover:shadow-lg'
               >
-                {loading ? 'Processando...' : (
+                {loading ? (
+                  'Processando...'
+                ) : (
                   <>
-                    <IconArrowRight className="h-5 w-5" />
+                    <IconArrowRight className='h-5 w-5' />
                     Lançar Cobranças do Mês
                   </>
                 )}
@@ -215,52 +280,64 @@ export function RecurringChargesPage() {
           </CardContent>
         </Card>
 
-        <div className="space-y-6">
-          <Card className="border-border/50 bg-card/40 backdrop-blur-xl">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <IconUsers className="h-5 w-5 text-blue-500" />
+        <div className='space-y-6'>
+          <Card className='border-border/50 bg-card/40 backdrop-blur-xl'>
+            <CardHeader className='pb-3'>
+              <CardTitle className='flex items-center gap-2 text-lg'>
+                <IconUsers className='h-5 w-5 text-blue-500' />
                 Preview do Público
               </CardTitle>
             </CardHeader>
             <CardContent>
               {preview ? (
-                <div className="space-y-4">
-                  <div className="bg-primary/5 rounded-lg p-4 border border-primary/10">
-                    <div className="text-sm text-muted-foreground">Membros Ativos afetados</div>
-                    <div className="text-3xl font-bold text-primary">{preview.memberCount}</div>
+                <div className='space-y-4'>
+                  <div className='bg-primary/5 border-primary/10 rounded-lg border p-4'>
+                    <div className='text-muted-foreground text-sm'>
+                      Membros Ativos afetados
+                    </div>
+                    <div className='text-primary text-3xl font-bold'>
+                      {preview.memberCount}
+                    </div>
                   </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    O sistema buscará todos os membros com status <strong>Ativo</strong>. Membros licenciados, remidos ou inativos serão ignorados automaticamente.
+                  <p className='text-muted-foreground text-xs leading-relaxed'>
+                    O sistema buscará todos os membros com status{' '}
+                    <strong>Ativo</strong>. Membros licenciados, remidos ou
+                    inativos serão ignorados automaticamente.
                   </p>
                 </div>
               ) : (
-                <div className="text-sm text-muted-foreground italic h-24 flex items-center justify-center">
+                <div className='text-muted-foreground flex h-24 items-center justify-center text-sm italic'>
                   Selecione um tipo de cobrança para ver o preview.
                 </div>
               )}
             </CardContent>
           </Card>
 
-          <Card className="border-border/50 bg-card/40 backdrop-blur-xl">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <IconClock className="h-5 w-5 text-amber-500" />
+          <Card className='border-border/50 bg-card/40 backdrop-blur-xl'>
+            <CardHeader className='pb-3'>
+              <CardTitle className='flex items-center gap-2 text-lg'>
+                <IconClock className='h-5 w-5 text-amber-500' />
                 Segurança
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-start gap-3">
-                <IconCheck className="h-4 w-4 text-emerald-500 mt-1 shrink-0" />
-                <p className="text-xs text-muted-foreground">Prevenção contra lançamentos duplicados no mesmo mês.</p>
+            <CardContent className='space-y-3'>
+              <div className='flex items-start gap-3'>
+                <IconCheck className='mt-1 h-4 w-4 shrink-0 text-emerald-500' />
+                <p className='text-muted-foreground text-xs'>
+                  Prevenção contra lançamentos duplicados no mesmo mês.
+                </p>
               </div>
-              <div className="flex items-start gap-3">
-                <IconCheck className="h-4 w-4 text-emerald-500 mt-1 shrink-0" />
-                <p className="text-xs text-muted-foreground">Respeita o fechamento de caixa do período.</p>
+              <div className='flex items-start gap-3'>
+                <IconCheck className='mt-1 h-4 w-4 shrink-0 text-emerald-500' />
+                <p className='text-muted-foreground text-xs'>
+                  Respeita o fechamento de caixa do período.
+                </p>
               </div>
-              <div className="flex items-start gap-3">
-                <IconCheck className="h-4 w-4 text-emerald-500 mt-1 shrink-0" />
-                <p className="text-xs text-muted-foreground">Registra cada operação no log de auditoria.</p>
+              <div className='flex items-start gap-3'>
+                <IconCheck className='mt-1 h-4 w-4 shrink-0 text-emerald-500' />
+                <p className='text-muted-foreground text-xs'>
+                  Registra cada operação no log de auditoria.
+                </p>
               </div>
             </CardContent>
           </Card>
