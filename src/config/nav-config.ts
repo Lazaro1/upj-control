@@ -48,12 +48,25 @@ export const navItems: NavItem[] = [
     access: { requireOrg: true, excludeRole: 'org:member' }
   },
   {
-    title: 'Cobranças Manuais',
-    url: '/dashboard/charges',
+    title: 'Cobranças',
+    url: '#',
     icon: 'charges',
-    isActive: false,
+    isActive: true,
     shortcut: ['c', 'b'],
-    items: [],
+    items: [
+      {
+        title: 'Lançamentos',
+        url: '/dashboard/charges',
+        icon: 'charges',
+        shortcut: ['c', 'l']
+      },
+      {
+        title: 'Lançamento Mensal',
+        url: '/dashboard/charges/recurring',
+        icon: 'repeat',
+        shortcut: ['c', 'r']
+      }
+    ],
     access: { requireOrg: true, excludeRole: 'org:member' }
   },
   {

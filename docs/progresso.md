@@ -22,7 +22,9 @@
 | 2.1 | Extrato individual | ✅ Concluída | 2026-03-25 |
 | 2.2 | Geração de PDF | ✅ Concluída | 2026-03-25 |
 | 2.3 | Portal do irmão | ✅ Concluída | 2026-03-26 |
-| 2.4 | Cobranças recorrentes | ⬜ Pendente | — |
+| 2.4 | Cobranças recorrentes | ✅ Concluída | 2026-03-27 |
+
+---
 
 ## Fase 3 — Financeiro gerencial
 
@@ -83,3 +85,14 @@
 - [x] Página principal do Portal (`/dashboard/portal`) com métricas resumidas e últimos pagamentos
 - [x] Tabela de transações completa do membro usando `TanStack Table`
 - [x] Botão para Baixar Extrato reaproveitado da API de relatórios
+
+### Parte 2.4 — Cobranças recorrentes
+**Início:** 2026-03-27
+
+- [x] Expansão do schema `RecurringChargeRule` para suportar frequência e valores
+- [x] Interface de gestão de regras integrada ao `ChargeTypeForm`
+- [x] Nova página de **Lançamento Mensal** (`/dashboard/charges/recurring`)
+- [x] Sistema de processamento em massa com validação de duplicidade
+- [x] Integração com `nav-config.ts` e registro de ícones (`repeat`)
+- [x] Proteção contra lançamentos em períodos encerrados
+- [x] Logs de auditoria vinculados ao tesoureiro que disparou o lote

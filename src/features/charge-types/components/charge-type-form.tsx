@@ -30,6 +30,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 import {
   chargeTypeSchema,
@@ -71,20 +78,24 @@ export function ChargeTypeForm({ initialData }: ChargeTypeFormProps) {
   const form = useForm<ChargeTypeFormValues>({
     resolver: zodResolver(chargeTypeSchema),
     defaultValues: initialData
-      ? {
-        name: initialData.name,
-        description: initialData.description || '',
-        defaultAmount: initialData.defaultAmount ?? undefined,
-        isRecurring: initialData.isRecurring,
-        active: initialData.active
-      }
-      : {
-        name: '',
-        description: '',
-        defaultAmount: undefined,
-        isRecurring: false,
-        active: true
-      }
+      ? ({
+          name: initialData.name,
+          description: initialData.description || '',
+          defaultAmount: initialData.defaultAmount ?? undefined,
+          isRecurring: initialData.isRecurring,
+          active: initialData.active,
+          frequency: (initialData as any).frequency || 'monthly',
+          recurringAmount: (initialData as any).recurringAmount ?? undefined
+        } as ChargeTypeFormValues)
+      : ({
+          name: '',
+          description: '',
+          defaultAmount: undefined,
+          isRecurring: false,
+          active: true,
+          frequency: 'monthly',
+          recurringAmount: undefined
+        } as ChargeTypeFormValues)
   });
 
   const onSubmit = async (data: ChargeTypeFormValues) => {
@@ -283,6 +294,70 @@ export function ChargeTypeForm({ initialData }: ChargeTypeFormProps) {
                       </FormItem>
                     )}
                   />
+
+                  {form.watch('isRecurring') && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className='col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4'
+                    >
+                      <FormField
+                        control={form.control}
+                        name='frequency'
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Frequência</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger className='h-11'>
+                                  <SelectValue placeholder="Selecione a frequência" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="monthly">Mensal</SelectItem>
+                                <SelectItem value="quarterly">Trimestral</SelectItem>
+                                <SelectItem value="semiannual">Semestral</SelectItem>
+                                <SelectItem value="annual">Anual</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name='recurringAmount'
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Valor por Recorrência</FormLabel>
+                            <FormControl>
+                              <div className='relative flex items-center'>
+                                <div className='pointer-events-none absolute left-3 flex items-center text-muted-foreground'>
+                                  <IconCurrencyReal className='h-4 w-4' />
+                                </div>
+                                <Input
+                                  type='number'
+                                  step='0.01'
+                                  min='0'
+                                  className='h-11 pl-9 bg-background/50 transition-all focus:bg-background'
+                                  placeholder='0.00'
+                                  {...field}
+                                  value={field.value ?? ''}
+                                  onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                />
+                              </div>
+                            </FormControl>
+                            <FormDescription>
+                              Se vazio, usará o Valor Padrão.
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </motion.div>
+                  )}
                 </div>
               </motion.div>
 

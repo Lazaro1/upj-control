@@ -45,12 +45,22 @@ export async function getChargeTypes({
 }
 
 export async function getChargeTypeById(id: string) {
-  const chargeType = await prisma.chargeType.findUnique({ where: { id } });
+  const chargeType = await prisma.chargeType.findUnique({
+    where: { id },
+    include: { recurringChargeRules: true }
+  });
   if (!chargeType) return null;
+
+  const rule = chargeType.recurringChargeRules?.[0];
 
   return {
     ...chargeType,
-    defaultAmount: chargeType.defaultAmount ? chargeType.defaultAmount.toNumber() : null
+    defaultAmount: chargeType.defaultAmount
+      ? chargeType.defaultAmount.toNumber()
+      : null,
+    // Adicionando dados da regra para o formulário
+    frequency: rule?.frequency || 'monthly',
+    recurringAmount: rule?.amount ? rule.amount.toNumber() : undefined
   };
 }
 
@@ -66,7 +76,17 @@ export async function createChargeType(data: ChargeTypeFormValues) {
       description: parsed.data.description || null,
       defaultAmount: parsed.data.defaultAmount ?? null,
       isRecurring: parsed.data.isRecurring,
-      active: parsed.data.active
+      active: parsed.data.active,
+      // Se for recorrente, cria a regra básica
+      ...(parsed.data.isRecurring && {
+        recurringChargeRules: {
+          create: {
+            frequency: parsed.data.frequency || 'monthly',
+            amount: parsed.data.recurringAmount || parsed.data.defaultAmount || 0,
+            active: true
+          }
+        }
+      })
     }
   });
 
@@ -90,6 +110,33 @@ export async function updateChargeType(id: string, data: ChargeTypeFormValues) {
       active: parsed.data.active
     }
   });
+
+  // Gerenciar a regra de recorrência
+  if (parsed.data.isRecurring) {
+    const existingRule = await prisma.recurringChargeRule.findFirst({
+      where: { chargeTypeId: id }
+    });
+
+    if (existingRule) {
+      await prisma.recurringChargeRule.update({
+        where: { id: existingRule.id },
+        data: {
+          frequency: parsed.data.frequency || 'monthly',
+          amount: parsed.data.recurringAmount || parsed.data.defaultAmount || 0,
+          active: true
+        }
+      });
+    } else {
+      await prisma.recurringChargeRule.create({
+        data: {
+          chargeTypeId: id,
+          frequency: parsed.data.frequency || 'monthly',
+          amount: parsed.data.recurringAmount || parsed.data.defaultAmount || 0,
+          active: true
+        }
+      });
+    }
+  }
 
   revalidatePath('/dashboard/charge-types');
   return { success: true, data: chargeType };
