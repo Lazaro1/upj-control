@@ -76,6 +76,7 @@ export function MemberForm({ initialData }: MemberFormProps) {
     defaultValues: initialData
       ? {
           fullName: initialData.fullName,
+          cim: initialData.cim || '',
           email: initialData.email,
           phone: initialData.phone || '',
           status: initialData.status,
@@ -86,6 +87,7 @@ export function MemberForm({ initialData }: MemberFormProps) {
         }
       : {
           fullName: '',
+          cim: '',
           email: '',
           phone: '',
           status: 'ativo' as const,
@@ -172,6 +174,29 @@ export function MemberForm({ initialData }: MemberFormProps) {
                             placeholder='Nome e sobrenome do irmão' 
                             {...field} 
                           />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name='cim'
+                    render={({ field }) => (
+                      <FormItem className='col-span-1 md:col-span-5 group'>
+                        <FormLabel className='text-foreground/80 group-focus-within:text-primary transition-colors'>CIM</FormLabel>
+                        <FormControl>
+                          <div className='relative flex items-center'>
+                            <div className='pointer-events-none absolute left-3 flex items-center text-muted-foreground'>
+                              <IconIdBadge className='h-4 w-4' />
+                            </div>
+                            <Input
+                              className='h-11 pl-9 bg-background/50 transition-all focus:bg-background'
+                              placeholder='Cartão de Identificação Maçônica'
+                              {...field}
+                            />
+                          </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>

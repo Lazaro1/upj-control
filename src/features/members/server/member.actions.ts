@@ -76,6 +76,7 @@ export async function createMember(data: MemberFormValues) {
   const member = await prisma.member.create({
     data: {
       fullName: parsed.data.fullName,
+      cim: parsed.data.cim || null,
       email: parsed.data.email,
       phone: parsed.data.phone || null,
       status: parsed.data.status as MemberStatus,
@@ -98,6 +99,7 @@ export async function updateMember(id: string, data: MemberFormValues) {
     where: { id },
     data: {
       fullName: parsed.data.fullName,
+      cim: parsed.data.cim || null,
       email: parsed.data.email,
       phone: parsed.data.phone || null,
       status: parsed.data.status as MemberStatus,

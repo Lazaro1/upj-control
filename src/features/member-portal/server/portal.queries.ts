@@ -1,46 +1,21 @@
 'use server';
 
 import { prisma } from '@/lib/db';
-import { auth, currentUser } from '@clerk/nextjs/server';
+import { auth } from '@clerk/nextjs/server';
 import { ChargeStatus } from '@prisma/client';
 
 export async function getMemberByClerkId() {
   const { userId } = await auth();
   if (!userId) return null;
 
-  // 1. First try to find by clerkUserId directly (fastest, most common case)
-  let member = await prisma.member.findUnique({
+  // O vínculo agora é feito exclusivamente pela tela de verificação de CIM.
+  // Se o clerkUserId não estiver vinculado, o layout do dashboard redireciona
+  // para /auth/verify-cim antes de chegar aqui.
+  const member = await prisma.member.findUnique({
     where: { clerkUserId: userId }
   });
 
-  if (member) return member;
-
-  // 2. If not found, it might be their first login. Fetch email from Clerk.
-  const user = await currentUser();
-  if (!user) return null;
-
-  const primaryEmail = user.emailAddresses.find(
-    (e) => e.id === user.primaryEmailAddressId
-  )?.emailAddress;
-
-  if (!primaryEmail) return null;
-
-  // 3. Find if a member exists with this email
-  const memberByEmail = await prisma.member.findUnique({
-    where: { email: primaryEmail }
-  });
-
-  // 4. If a member exists with that email, link the Clerk ID to them
-  if (memberByEmail) {
-    member = await prisma.member.update({
-      where: { id: memberByEmail.id },
-      data: { clerkUserId: userId }
-    });
-    return member;
-  }
-
-  // 5. If it reaches here, the user signed up but the Treasury hasn't added them as a member yet.
-  return null;
+  return member;
 }
 
 export async function getPortalOverview() {

@@ -31,6 +31,15 @@ export const columns: ColumnDef<MemberSerializable>[] = [
     enableColumnFilter: true
   },
   {
+    id: 'cim',
+    accessorKey: 'cim',
+    header: 'CIM',
+    cell: ({ row }) => {
+      const cim = row.original.cim;
+      return cim || '—';
+    }
+  },
+  {
     id: 'email',
     accessorKey: 'email',
     header: ({ column }) => (

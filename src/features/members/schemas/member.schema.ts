@@ -4,6 +4,7 @@ export const memberFormSchema = z.object({
   fullName: z
     .string({ message: 'Nome completo é obrigatório' })
     .min(3, 'Nome deve ter pelo menos 3 caracteres'),
+  cim: z.string().optional(),
   email: z
     .string({ message: 'E-mail é obrigatório' })
     .email('E-mail inválido'),

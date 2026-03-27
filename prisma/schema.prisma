@@ -10,6 +10,7 @@ datasource db {
 model Member {
   id            String       @id @default(cuid())
   clerkUserId   String?      @unique @map("clerk_user_id")
+  cim           String?      @unique
   fullName      String       @map("full_name")
   email         String       @unique
   phone         String?
