@@ -26,11 +26,11 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
-  SidebarRail
+  SidebarRail,
+  useSidebar
 } from '@/components/ui/sidebar';
 import { UserAvatarProfile } from '@/components/user-avatar-profile';
 import { navItems } from '@/config/nav-config';
-import { useMediaQuery } from '@/hooks/use-media-query';
 import { useUser } from '@clerk/nextjs';
 import { useFilteredNavItems } from '@/hooks/use-nav';
 import {
@@ -45,23 +45,34 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import * as React from 'react';
 import { Icons } from '../icons';
-import { OrgSwitcher } from '../org-switcher';
 
 export default function AppSidebar() {
   const pathname = usePathname();
-  const { isOpen } = useMediaQuery();
+  const { isMobile } = useSidebar();
   const { user } = useUser();
   const router = useRouter();
   const filteredItems = useFilteredNavItems(navItems);
 
-  React.useEffect(() => {
-    // Side effects based on sidebar state changes
-  }, [isOpen]);
-
   return (
     <Sidebar collapsible='icon'>
       <SidebarHeader className='group-data-[collapsible=icon]:pt-4'>
-        <OrgSwitcher />
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton size='lg' disabled className="cursor-default hover:bg-transparent">
+              <div className='bg-primary text-primary-foreground flex aspect-square size-8 shrink-0 items-center justify-center rounded-lg shadow-md'>
+                <Icons.logo className='size-5' />
+              </div>
+              <div className='grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden'>
+                <span className='truncate font-semibold text-foreground'>
+                  UPJ Control
+                </span>
+                <span className='text-muted-foreground truncate text-xs font-medium'>
+                  Tesouraria
+                </span>
+              </div>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarHeader>
       <SidebarContent className='overflow-x-hidden'>
         <SidebarGroup>
@@ -144,7 +155,7 @@ export default function AppSidebar() {
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 className='w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg'
-                side='bottom'
+                side={isMobile ? 'bottom' : 'right'}
                 align='end'
                 sideOffset={4}
               >
@@ -166,20 +177,17 @@ export default function AppSidebar() {
                     onClick={() => router.push('/dashboard/profile')}
                   >
                     <IconUserCircle className='mr-2 h-4 w-4' />
-                    Profile
-                  </DropdownMenuItem>
-                
-                  <DropdownMenuItem
-                    onClick={() => router.push('/dashboard/notifications')}
-                  >
-                    <IconBell className='mr-2 h-4 w-4' />
-                    Notifications
+                    Minha conta
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <IconLogout className='mr-2 h-4 w-4' />
-                  <SignOutButton redirectUrl='/auth/sign-in' />
+                <DropdownMenuItem asChild>
+                  <SignOutButton redirectUrl='/auth/sign-in'>
+                    <div className='flex w-full cursor-pointer items-center'>
+                      <IconLogout className='mr-2 h-4 w-4' />
+                      Sair
+                    </div>
+                  </SignOutButton>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

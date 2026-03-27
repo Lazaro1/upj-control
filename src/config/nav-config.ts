@@ -65,44 +65,18 @@ export const navItems: NavItem[] = [
     items: [],
     access: { requireOrg: true, excludeRole: 'org:member' }
   },
+
   {
-    title: 'Workspaces',
-    url: '/dashboard/workspaces',
-    icon: 'workspace',
-    isActive: false,
-    items: []
-  },
-  {
-    title: 'Teams',
-    url: '/dashboard/workspaces/team',
-    icon: 'teams',
-    isActive: false,
-    items: [],
-    access: { requireOrg: true, excludeRole: 'org:member' }
-  },
-  {
-    title: 'Account',
+    title: 'Minha Conta',
     url: '#',
     icon: 'account',
     isActive: true,
     items: [
       {
-        title: 'Profile',
+        title: 'Meu Perfil',
         url: '/dashboard/profile',
         icon: 'profile',
         shortcut: ['m', 'm']
-      },
-      {
-        title: 'Notifications',
-        url: '/dashboard/notifications',
-        icon: 'notification',
-        shortcut: ['n', 'n']
-      },
-      {
-        title: 'Login',
-        shortcut: ['l', 'l'],
-        url: '/',
-        icon: 'login'
       }
     ]
   }
