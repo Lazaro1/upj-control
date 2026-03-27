@@ -78,6 +78,13 @@ export function useFilteredNavItems(items: NavItem[]) {
           }
         }
 
+        // Check excludeRole
+        if (item.access.excludeRole) {
+          if (accessContext.role === item.access.excludeRole) {
+            return false;
+          }
+        }
+
         // Note: Plans and features require server-side checks with Clerk's has() function
         // For navigation visibility, you can either:
         // 1. Store plan/feature info in organization metadata (client-accessible)
@@ -129,6 +136,13 @@ export function useFilteredNavItems(items: NavItem[]) {
                 return false;
               }
               if (accessContext.role !== childItem.access.role) {
+                return false;
+              }
+            }
+
+            // Check excludeRole
+            if (childItem.access.excludeRole) {
+              if (accessContext.role === childItem.access.excludeRole) {
                 return false;
               }
             }

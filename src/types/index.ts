@@ -5,6 +5,7 @@ export interface PermissionCheck {
   plan?: string;
   feature?: string;
   role?: string;
+  excludeRole?: string;
   requireOrg?: boolean;
 }
 

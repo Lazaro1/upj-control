@@ -18,7 +18,16 @@ export const navItems: NavItem[] = [
     shortcut: ['d', 'd'],
     items: [],
     // Visível para admin, treasurer e manager (member não vê o dashboard geral)
-    access: { requireOrg: true }
+    access: { requireOrg: true, excludeRole: 'org:member' }
+  },
+  {
+    title: 'Meu Portal',
+    url: '/dashboard/portal',
+    icon: 'profile',
+    isActive: false,
+    shortcut: ['p', 'r'],
+    items: [],
+    access: { requireOrg: true, role: 'org:member' }
   },
   {
     title: 'Membros',
@@ -27,7 +36,7 @@ export const navItems: NavItem[] = [
     isActive: false,
     shortcut: ['m', 'b'],
     items: [],
-    access: { requireOrg: true }
+    access: { requireOrg: true, excludeRole: 'org:member' }
   },
   {
     title: 'Tipos de Cobrança',
@@ -36,7 +45,7 @@ export const navItems: NavItem[] = [
     isActive: false,
     shortcut: ['t', 'c'],
     items: [],
-    access: { requireOrg: true }
+    access: { requireOrg: true, excludeRole: 'org:member' }
   },
   {
     title: 'Cobranças Manuais',
@@ -45,7 +54,7 @@ export const navItems: NavItem[] = [
     isActive: false,
     shortcut: ['c', 'b'],
     items: [],
-    access: { requireOrg: true }
+    access: { requireOrg: true, excludeRole: 'org:member' }
   },
   {
     title: 'Pagamentos',
@@ -54,7 +63,7 @@ export const navItems: NavItem[] = [
     isActive: false,
     shortcut: ['p', 'g'],
     items: [],
-    access: { requireOrg: true }
+    access: { requireOrg: true, excludeRole: 'org:member' }
   },
   {
     title: 'Workspaces',
@@ -69,7 +78,7 @@ export const navItems: NavItem[] = [
     icon: 'teams',
     isActive: false,
     items: [],
-    access: { requireOrg: true }
+    access: { requireOrg: true, excludeRole: 'org:member' }
   },
   {
     title: 'Account',

@@ -74,6 +74,7 @@
 
 - Aproveitar a integração já estabelecida do Clerk na `Next.js Admin Dashboard Starter`
 - Configurar *Clerk Organizations* e *Clerk Roles/Permissions* no painel de administração da plataforma (RBAC nativo)
+- **Configurar Restrição de Cadastro (Whitelist):** Implementar lógica para permitir apenas usuários cujos e-mails já estejam previamente cadastrados na base de Membros da Tesouraria.
 - Fazer a validação server-side com `auth()` do Clerk, bloqueando rotas ou chamadas no Prisma dependendo da permissão
 - Renderização condicional client-side usando `useOrganization()` ou o componente `<Protect>` nativo para ocultar botões e links
 - (Opcional) Usar Webhooks do Clerk internamente para manter um log mínimo se exigido, embora não seja estritamente necessário já que os metadados podem cruzar com `userId` do Clerk
@@ -99,14 +100,14 @@
 
 - Criar tabela:
   ```
-  members (id, clerk_user_id (opcional), full_name, email, phone, status, joined_at, notes_internal, created_at, updated_at)
+  members (id, cim, clerk_user_id (opcional), full_name, email, phone, status, joined_at, notes_internal, created_at, updated_at)
   ```
   *(Nota: Em vez de criar vínculo local rígido com usuários, a chave primária de login será o `clerk_user_id`)*
 - Desenvolvimento da página de membros listando a tabela usando o componente `TanStack Table` em conjunto com a UI `shadcn` já pré-configurada.
 - Listagem com busca por nome/e-mail e filtro por status
 - Campo `notes_internal` deve ser visível apenas para `tesoureiro` e `admin` — nunca exposto ao portal do irmão
-- Tela de vínculo: associar um registro da base de irmãos no banco local a um e-mail do sistema Clerk (para acesso ao Portal)
-- Validação: e-mail único, campos obrigatórios
+- Tela de vínculo: associar um registro da base de irmãos no banco local a um e-mail do sistema Clerk (para acesso ao Portal) utilizando Email + CIM para maior segurança.
+- Validação: e-mail e CIM únicos, campos obrigatórios
 - Auditoria: registrar criação e edição em `audit_logs`
 
 **Status possíveis de membro:** `ativo`, `inativo`, `licenciado`, `remido`
@@ -271,7 +272,7 @@
 
 **Tarefas:**
 
-- Rota protegida por papel `irmao` e permissão `portal.self.read`
+- Rota protegida por papel `irmao` e permissão `portal.self.read` - **atencao** `verificar se o role vai irmao mesmo ou member org:member `
 - Isolamento total: queries sempre filtradas por `member_id` do usuário autenticado
 - Painel inicial (home):
   - Saldo atual (crédito disponível)
@@ -546,6 +547,8 @@ Estas decisões devem ser tomadas **antes** de iniciar a parte correspondente. D
 | Stack de geração de PDF | Parte 2.2 | React-PDF ou Puppeteer | React-PDF para o MVP |
 | Disparo de recorrência: manual vs cron | Parte 2.4 | Botão manual ou job automático | Botão manual com proteção anti-duplicata |
 | Serviço de e-mail | Parte 4.1 | Resend, SendGrid, SMTP próprio | Resend — API simples, plano gratuito generoso |
+| Estratégia de Cadastro | Parte 1.2 | Público vs Whitelist via Banco | **Whitelist** — Apenas quem já está no banco de Membros pode criar conta |
+| Chave de Vínculo | Parte 1.3 | Apenas Email vs Email + CIM | **Email + CIM** — Garante que o vínculo automático não ocorra por erro de digitação |
 
 ---
 

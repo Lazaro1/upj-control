@@ -21,7 +21,7 @@
 |-------|-----------|--------|------|
 | 2.1 | Extrato individual | ✅ Concluída | 2026-03-25 |
 | 2.2 | Geração de PDF | ✅ Concluída | 2026-03-25 |
-| 2.3 | Portal do irmão | ⬜ Pendente | — |
+| 2.3 | Portal do irmão | ✅ Concluída | 2026-03-26 |
 | 2.4 | Cobranças recorrentes | ⬜ Pendente | — |
 
 ## Fase 3 — Financeiro gerencial
@@ -74,3 +74,12 @@
 - [x] Suporte a parâmetros (`type=extrato` ou `type=ficha`)
 - [x] Logs de auditoria para geração de relatórios
 - [x] Botões de download integrados na visualização de extrato
+
+### Parte 2.3 — Portal do irmão
+**Início:** 2026-03-26
+
+- [x] Configuração da role `org:member` no `nav-config.ts`
+- [x] Server Actions isoladas por `clerk_user_id` em `portal.queries.ts`
+- [x] Página principal do Portal (`/dashboard/portal`) com métricas resumidas e últimos pagamentos
+- [x] Tabela de transações completa do membro usando `TanStack Table`
+- [x] Botão para Baixar Extrato reaproveitado da API de relatórios
