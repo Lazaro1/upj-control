@@ -87,6 +87,15 @@ export const navItems: NavItem[] = [
     items: [],
     access: { requireOrg: true, excludeRole: 'org:member' }
   },
+  {
+    title: 'Relatórios',
+    url: '/dashboard/reports',
+    icon: 'reports',
+    isActive: false,
+    shortcut: ['r', 'l'],
+    items: [],
+    access: { requireOrg: true, excludeRole: 'org:member' }
+  },
 
   {
     title: 'Minha Conta',
