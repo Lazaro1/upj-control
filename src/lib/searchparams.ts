@@ -2,7 +2,8 @@ import {
   createSearchParamsCache,
   createSerializer,
   parseAsInteger,
-  parseAsString
+  parseAsString,
+  parseAsArrayOf
 } from 'nuqs/server';
 
 export const searchParams = {
@@ -16,7 +17,12 @@ export const searchParams = {
   memberId: parseAsString,
   chargeTypeId: parseAsString,
   dueDate: parseAsString,
-  paymentMethod: parseAsString
+  paymentMethod: parseAsString,
+  type: parseAsArrayOf(parseAsString, ','),
+  transactionType: parseAsString,
+  category: parseAsString,
+  dateFrom: parseAsString,
+  dateTo: parseAsString
 };
 
 export const searchParamsCache = createSearchParamsCache(searchParams);

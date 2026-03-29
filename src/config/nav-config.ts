@@ -78,6 +78,15 @@ export const navItems: NavItem[] = [
     items: [],
     access: { requireOrg: true, excludeRole: 'org:member' }
   },
+  {
+    title: 'Caixa Geral',
+    url: '/dashboard/cash-transactions',
+    icon: 'cashRegister',
+    isActive: false,
+    shortcut: ['c', 'x'],
+    items: [],
+    access: { requireOrg: true, excludeRole: 'org:member' }
+  },
 
   {
     title: 'Minha Conta',
