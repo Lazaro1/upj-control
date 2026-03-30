@@ -30,8 +30,8 @@
 
 | Parte | Descrição | Status | Data |
 |-------|-----------|--------|------|
-| 3.1 | Caixa geral da loja | ⬜ Pendente | — |
-| 3.2 | Relatórios financeiros | ⬜ Pendente | — |
+| 3.1 | Caixa geral da loja | ✅ Concluída | 2026-03-30 |
+| 3.2 | Relatórios financeiros | ✅ Concluída | 2026-03-30 |
 | 3.3 | Relatório de inadimplência | ⬜ Pendente | — |
 | 3.4 | Auditoria reforçada | ⬜ Pendente | — |
 
@@ -96,3 +96,28 @@
 - [x] Integração com `nav-config.ts` e registro de ícones (`repeat`)
 - [x] Proteção contra lançamentos em períodos encerrados
 - [x] Logs de auditoria vinculados ao tesoureiro que disparou o lote
+
+### Parte 3.1 — Caixa geral da loja
+**Início:** 2026-03-29 (concluído em 2026-03-30)
+
+- [x] Tabela `cash_transactions` no Prisma (entradas e saídas)
+- [x] Interface de listagem de transações com filtros de data
+- [x] Cards de resumo financeiro (Saldo total, Entradas, Saídas)
+- [x] Sincronização de filtros com a URL via `nuqs`
+- [x] Formulário de "Novo Lançamento" funcional
+- [x] Proteção de rota e RBAC (diretoria e tesoureiro apenas)
+- [x] Correção de bugs de re-fetch nos filtros e paginação
+
+### Parte 3.2 — Relatórios financeiros
+**Início:** 2026-03-30
+
+- [x] Módulo central de relatórios (`/dashboard/reports`)
+- [x] Query de Receitas (agrupado por método de pagamento e categoria)
+- [x] Query de Despesas (agrupado por categoria)
+- [x] Saldo Consolidado (Entradas - Saídas)
+- [x] Posição Financeira por Membro (Total cobrado vs Total pago)
+- [x] Gráfico de Receitas por Tipo de Cobrança
+- [x] Exportação de relatórios em CSV e PDF (templates `report`, `statement`, `ficha`)
+- [x] Filtros globais de período integrados com as queries
+
+
