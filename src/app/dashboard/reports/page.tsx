@@ -1,7 +1,6 @@
 import { auth } from '@clerk/nextjs/server';
-import { redirect } from 'next/navigation';
+import { forbidden, redirect } from 'next/navigation';
 import PageContainer from '@/components/layout/page-container';
-import { resolveDashboardLanding } from '@/lib/auth/landing';
 import { ReportsPage } from '@/features/reports/components/reports-page';
 
 export const metadata = {
@@ -9,15 +8,14 @@ export const metadata = {
 };
 
 export default async function ReportsRoutePage() {
-  const { userId, orgId, orgRole } = await auth();
+  const { orgId, orgRole } = await auth();
 
   if (!orgId) {
     redirect('/dashboard/workspaces');
   }
 
   if (orgRole === 'org:member') {
-    const landing = await resolveDashboardLanding({ userId, orgRole });
-    redirect(landing);
+    forbidden();
   }
 
   return (

@@ -1,22 +1,28 @@
 'use client';
 
-import { useState, type ReactElement } from 'react';
+import { useEffect, useState, type ReactElement } from 'react';
+import { format, startOfMonth } from 'date-fns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/icons';
 import { IconDownload, IconFileTypePdf } from '@tabler/icons-react';
 import { ReportFilters } from './report-filters';
+import { DelinquencyReportFilters } from './delinquency-report-filters';
 import { IncomeReportTable } from './income-report-table';
 import { ExpenseReportTable } from './expense-report-table';
 import { ConsolidatedBalanceCard } from './consolidated-balance-card';
 import { ReceiptsByTypeChart } from './receipts-by-type-chart';
 import { MemberPositionTable } from './member-position-table';
+import { DelinquencyReportTable } from './delinquency-report-table';
 import {
   getConsolidatedBalance,
+  getDelinquencyChargeTypeOptions,
+  getDelinquencyReport,
   getExpenseReport,
   getIncomeReport,
   getMemberFinancialPosition,
-  getReceiptsByChargeType
+  getReceiptsByChargeType,
+  type DelinquencyReportData
 } from '../server/report.actions';
 
 type ReportsTabValue =
@@ -24,7 +30,8 @@ type ReportsTabValue =
   | 'expenses'
   | 'balance'
   | 'by-charge-type'
-  | 'member-position';
+  | 'member-position'
+  | 'delinquency';
 
 interface IncomeData {
   paymentEntries: Array<{ source: string; total: number }>;
@@ -57,6 +64,11 @@ interface MemberPositionData {
   balance: number;
 }
 
+interface DelinquencyChargeTypeOption {
+  id: string;
+  name: string;
+}
+
 export function ReportsPage() {
   const [activeTab, setActiveTab] = useState<ReportsTabValue>('income');
   const [dateFrom, setDateFrom] = useState('');
@@ -73,12 +85,42 @@ export function ReportsPage() {
     MemberPositionData[] | null
   >(null);
 
+  const [delinquencyData, setDelinquencyData] =
+    useState<DelinquencyReportData | null>(null);
+  const [delinquencyError, setDelinquencyError] = useState<string | null>(null);
+  const [delinquencyExportError, setDelinquencyExportError] = useState<
+    string | null
+  >(null);
+  const [isExportingDelinquency, setIsExportingDelinquency] = useState(false);
+  const [delinquencyFilterOptions, setDelinquencyFilterOptions] = useState<
+    DelinquencyChargeTypeOption[]
+  >([]);
+  const [delinquencyFilters, setDelinquencyFilters] = useState(() => ({
+    dueDateFrom: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
+    dueDateTo: format(new Date(), 'yyyy-MM-dd'),
+    chargeTypeId: undefined as string | undefined
+  }));
+
+  useEffect(() => {
+    async function loadChargeTypeOptions() {
+      const response = await getDelinquencyChargeTypeOptions();
+      if (response.success && response.data) {
+        setDelinquencyFilterOptions(response.data);
+      }
+    }
+
+    void loadChargeTypeOptions();
+  }, []);
+
   function clearData(): void {
     setIncomeData(null);
     setExpenseData(null);
     setBalanceData(null);
     setReceiptsByTypeData(null);
     setMemberPositionData(null);
+    setDelinquencyData(null);
+    setDelinquencyError(null);
+    setDelinquencyExportError(null);
   }
 
   async function handleGenerate(
@@ -135,6 +177,90 @@ export function ReportsPage() {
     }
   }
 
+  async function handleGenerateDelinquency(nextFilters: {
+    dueDateFrom: string;
+    dueDateTo: string;
+    chargeTypeId: string | undefined;
+  }): Promise<void> {
+    setDelinquencyFilters(nextFilters);
+    setDelinquencyError(null);
+    setDelinquencyExportError(null);
+    setIsLoading(true);
+
+    try {
+      const response = await getDelinquencyReport(nextFilters);
+      if (response.success && response.data) {
+        setDelinquencyData(response.data);
+        setDelinquencyFilterOptions(response.data.chargeTypeOptions);
+        return;
+      }
+
+      setDelinquencyData(null);
+      setDelinquencyError(response.error || 'Falha ao carregar inadimplencia.');
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  function buildDownloadUrl(
+    basePath: string,
+    paramsInput: Record<string, string | undefined>
+  ): string {
+    const params = new URLSearchParams();
+
+    Object.entries(paramsInput).forEach(([key, value]) => {
+      if (value) {
+        params.set(key, value);
+      }
+    });
+
+    return `${basePath}?${params.toString()}`;
+  }
+
+  async function downloadDelinquency(format: 'csv' | 'pdf') {
+    setDelinquencyExportError(null);
+    setIsExportingDelinquency(true);
+
+    try {
+      const endpoint =
+        format === 'csv'
+          ? '/api/reports/delinquency'
+          : '/api/reports/delinquency/pdf';
+
+      const url = buildDownloadUrl(endpoint, {
+        dueDateFrom: delinquencyFilters.dueDateFrom,
+        dueDateTo: delinquencyFilters.dueDateTo,
+        chargeTypeId: delinquencyFilters.chargeTypeId
+      });
+
+      const response = await fetch(url);
+      if (!response.ok) {
+        const message = await response.text();
+        throw new Error(message || 'Falha ao exportar relatorio.');
+      }
+
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = blobUrl;
+      anchor.download =
+        format === 'csv'
+          ? 'relatorio-inadimplencia.csv'
+          : 'relatorio-inadimplencia.pdf';
+
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error: any) {
+      setDelinquencyExportError(
+        error?.message || 'Falha ao exportar. Tente novamente.'
+      );
+    } finally {
+      setIsExportingDelinquency(false);
+    }
+  }
+
   function handleTabChange(value: string): void {
     setActiveTab(value as ReportsTabValue);
     clearData();
@@ -143,17 +269,19 @@ export function ReportsPage() {
   function renderPlaceholder(): ReactElement {
     return (
       <div className='text-muted-foreground rounded-md border border-dashed p-10 text-center text-sm'>
-        Selecione o período e clique em "Gerar Relatório" para visualizar os
+        Selecione o periodo e clique em "Gerar Relatorio" para visualizar os
         dados.
       </div>
     );
   }
 
-  function buildDownloadUrl(basePath: string): string {
-    const params = new URLSearchParams();
-    params.set('dateFrom', dateFrom);
-    params.set('dateTo', dateTo);
-    return `${basePath}?${params.toString()}`;
+  function renderDelinquencyPlaceholder(): ReactElement {
+    return (
+      <div className='text-muted-foreground rounded-md border border-dashed p-10 text-center text-sm'>
+        Configure os filtros de vencimento e clique em "Filtrar" para gerar o
+        relatorio de inadimplencia.
+      </div>
+    );
   }
 
   function renderExportActions(): ReactElement | null {
@@ -162,7 +290,10 @@ export function ReportsPage() {
         <div className='flex flex-wrap items-center gap-2'>
           <Button asChild variant='outline' size='sm'>
             <a
-              href={buildDownloadUrl('/api/reports/income')}
+              href={buildDownloadUrl('/api/reports/income', {
+                dateFrom,
+                dateTo
+              })}
               target='_blank'
               download
             >
@@ -171,7 +302,10 @@ export function ReportsPage() {
           </Button>
           <Button asChild variant='outline' size='sm'>
             <a
-              href={buildDownloadUrl('/api/reports/income/pdf')}
+              href={buildDownloadUrl('/api/reports/income/pdf', {
+                dateFrom,
+                dateTo
+              })}
               target='_blank'
               download
             >
@@ -187,7 +321,10 @@ export function ReportsPage() {
         <div className='flex flex-wrap items-center gap-2'>
           <Button asChild variant='outline' size='sm'>
             <a
-              href={buildDownloadUrl('/api/reports/expenses')}
+              href={buildDownloadUrl('/api/reports/expenses', {
+                dateFrom,
+                dateTo
+              })}
               target='_blank'
               download
             >
@@ -196,7 +333,10 @@ export function ReportsPage() {
           </Button>
           <Button asChild variant='outline' size='sm'>
             <a
-              href={buildDownloadUrl('/api/reports/expenses/pdf')}
+              href={buildDownloadUrl('/api/reports/expenses/pdf', {
+                dateFrom,
+                dateTo
+              })}
               target='_blank'
               download
             >
@@ -212,7 +352,10 @@ export function ReportsPage() {
         <div className='flex flex-wrap items-center gap-2'>
           <Button asChild variant='outline' size='sm'>
             <a
-              href={buildDownloadUrl('/api/reports/consolidated/pdf')}
+              href={buildDownloadUrl('/api/reports/consolidated/pdf', {
+                dateFrom,
+                dateTo
+              })}
               target='_blank'
               download
             >
@@ -228,7 +371,10 @@ export function ReportsPage() {
         <div className='flex flex-wrap items-center gap-2'>
           <Button asChild variant='outline' size='sm'>
             <a
-              href={buildDownloadUrl('/api/reports/member-position')}
+              href={buildDownloadUrl('/api/reports/member-position', {
+                dateFrom,
+                dateTo
+              })}
               target='_blank'
               download
             >
@@ -239,12 +385,46 @@ export function ReportsPage() {
       );
     }
 
+    if (activeTab === 'delinquency' && delinquencyData) {
+      return (
+        <div className='flex flex-wrap items-center gap-2'>
+          <Button
+            variant='outline'
+            size='sm'
+            onClick={() => void downloadDelinquency('csv')}
+            disabled={isExportingDelinquency}
+          >
+            <IconDownload className='mr-1 h-4 w-4' /> CSV
+          </Button>
+          <Button
+            variant='outline'
+            size='sm'
+            onClick={() => void downloadDelinquency('pdf')}
+            disabled={isExportingDelinquency}
+          >
+            <IconFileTypePdf className='mr-1 h-4 w-4' /> PDF
+          </Button>
+        </div>
+      );
+    }
+
     return null;
   }
 
   return (
     <div className='space-y-6'>
-      <ReportFilters onFilter={handleGenerate} isLoading={isLoading} />
+      {activeTab === 'delinquency' ? (
+        <DelinquencyReportFilters
+          chargeTypeOptions={delinquencyFilterOptions}
+          isLoading={isLoading}
+          initialDueDateFrom={delinquencyFilters.dueDateFrom}
+          initialDueDateTo={delinquencyFilters.dueDateTo}
+          initialChargeTypeId={delinquencyFilters.chargeTypeId}
+          onFilter={(filters) => void handleGenerateDelinquency(filters)}
+        />
+      ) : (
+        <ReportFilters onFilter={handleGenerate} isLoading={isLoading} />
+      )}
 
       <Tabs
         value={activeTab}
@@ -253,17 +433,33 @@ export function ReportsPage() {
       >
         <TabsList className='h-auto flex-wrap'>
           <TabsTrigger value='income'>Entradas</TabsTrigger>
-          <TabsTrigger value='expenses'>Saídas</TabsTrigger>
+          <TabsTrigger value='expenses'>Saidas</TabsTrigger>
           <TabsTrigger value='balance'>Saldo</TabsTrigger>
-          <TabsTrigger value='by-charge-type'>Por Tipo de Cobrança</TabsTrigger>
-          <TabsTrigger value='member-position'>Posição Individual</TabsTrigger>
+          <TabsTrigger value='by-charge-type'>Por Tipo de Cobranca</TabsTrigger>
+          <TabsTrigger value='member-position'>Posicao Individual</TabsTrigger>
+          <TabsTrigger value='delinquency'>Inadimplencia</TabsTrigger>
         </TabsList>
 
         <div className='text-muted-foreground text-xs'>
-          Período atual: {dateFrom || '--'} até {dateTo || '--'}
+          {activeTab === 'delinquency' ? (
+            <>
+              Vencimento atual: {delinquencyFilters.dueDateFrom || '--'} ate{' '}
+              {delinquencyFilters.dueDateTo || '--'}
+            </>
+          ) : (
+            <>
+              Periodo atual: {dateFrom || '--'} ate {dateTo || '--'}
+            </>
+          )}
         </div>
 
         {renderExportActions()}
+
+        {delinquencyExportError ? (
+          <div className='rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700'>
+            {delinquencyExportError}
+          </div>
+        ) : null}
 
         <TabsContent value='income'>
           {isLoading ? (
@@ -322,6 +518,35 @@ export function ReportsPage() {
             <MemberPositionTable data={memberPositionData} />
           ) : (
             renderPlaceholder()
+          )}
+        </TabsContent>
+
+        <TabsContent value='delinquency'>
+          {isLoading ? (
+            <div className='flex min-h-[220px] items-center justify-center'>
+              <Icons.spinner className='text-muted-foreground h-6 w-6 animate-spin' />
+            </div>
+          ) : delinquencyError ? (
+            <div className='space-y-3 rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-700'>
+              <p>{delinquencyError}</p>
+              <Button
+                variant='outline'
+                size='sm'
+                onClick={() =>
+                  void handleGenerateDelinquency(delinquencyFilters)
+                }
+              >
+                Tentar novamente
+              </Button>
+            </div>
+          ) : delinquencyData ? (
+            <DelinquencyReportTable
+              summaries={delinquencyData.summaries}
+              details={delinquencyData.details}
+              totals={delinquencyData.totals}
+            />
+          ) : (
+            renderDelinquencyPlaceholder()
           )}
         </TabsContent>
       </Tabs>
