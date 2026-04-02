@@ -9,6 +9,7 @@ import {
 } from '../schemas/payment.schema';
 import { Prisma } from '@prisma/client';
 import { writeAuditLog } from '@/features/audit-logs/server/audit-log-writer';
+import { normalizeReversePaymentReason } from './reverse-payment-reason';
 
 export async function getPayments(
   page = 1,
@@ -283,10 +284,11 @@ export async function createPayment(data: PaymentFormValues) {
   }
 }
 
-export async function reversePayment(paymentId: string) {
+export async function reversePayment(paymentId: string, reason: string) {
   try {
     const { userId, orgId } = await auth();
     if (!userId || !orgId) throw new Error('Nao autorizado');
+    const normalizedReason = normalizeReversePaymentReason(reason);
 
     await prisma.$transaction(async (tx) => {
       const payment = await tx.payment.findUnique({
@@ -349,7 +351,8 @@ export async function reversePayment(paymentId: string) {
         oldDataJson: oldPaymentData,
         newDataJson: {
           reversed: true,
-          reversedAt: new Date().toISOString()
+          reversedAt: new Date().toISOString(),
+          reason: normalizedReason
         }
       });
     });
