@@ -20,23 +20,35 @@ export const columns: ColumnDef<ChargeTypeSerializable>[] = [
     enableColumnFilter: true
   },
   {
+    id: 'description',
     accessorKey: 'description',
-    header: 'Descrição',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Descrição' />
+    ),
     cell: ({ row }) => row.original.description || '—'
   },
   {
+    id: 'defaultAmount',
     accessorKey: 'defaultAmount',
-    header: 'Valor Padrão',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Valor Padrão' />
+    ),
     cell: ({ row }) => {
       const amount = row.original.defaultAmount;
       return amount !== null
-        ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(amount)
+        ? new Intl.NumberFormat('pt-BR', {
+            style: 'currency',
+            currency: 'BRL'
+          }).format(amount)
         : 'Variável';
     }
   },
   {
+    id: 'isRecurring',
     accessorKey: 'isRecurring',
-    header: 'Recorrente',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Recorrente' />
+    ),
     cell: ({ row }) => (
       <Badge variant={row.original.isRecurring ? 'default' : 'secondary'}>
         {row.original.isRecurring ? 'Sim' : 'Não'}
@@ -46,7 +58,9 @@ export const columns: ColumnDef<ChargeTypeSerializable>[] = [
   {
     id: 'active',
     accessorKey: 'active',
-    header: 'Status',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Status' />
+    ),
     cell: ({ row }) => (
       <Badge variant={row.original.active ? 'default' : 'destructive'}>
         {row.original.active ? 'Ativo' : 'Inativo'}

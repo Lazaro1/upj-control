@@ -22,6 +22,7 @@ export default async function MembersPage({ searchParams }: MembersPageProps) {
   const { members, total, pageCount } = await getMembers({
     page: params.page,
     perPage: params.perPage,
+    sort: params.sort ?? undefined,
     fullName: params.fullName ?? undefined,
     email: params.email ?? undefined,
     phone: params.phone ?? undefined,
@@ -42,11 +43,7 @@ export default async function MembersPage({ searchParams }: MembersPageProps) {
         </Link>
       </div>
       <Separator />
-      <MemberListing
-        data={members}
-        totalItems={total}
-        pageCount={pageCount}
-      />
+      <MemberListing data={members} totalItems={total} pageCount={pageCount} />
     </div>
   );
 }

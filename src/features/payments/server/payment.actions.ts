@@ -15,7 +15,8 @@ export async function getPayments(
   perPage = 10,
   search?: string,
   memberId?: string,
-  paymentMethod?: string
+  paymentMethod?: string,
+  sort?: string
 ) {
   try {
     const { orgId } = await auth();
@@ -38,12 +39,63 @@ export async function getPayments(
       where.paymentMethod = paymentMethod;
     }
 
+    const sortableFields = [
+      'memberFullName',
+      'amount',
+      'paymentMethod',
+      'paymentDate',
+      'createdAt'
+    ] as const;
+    type PaymentSortableField = (typeof sortableFields)[number];
+
+    const isSortableField = (value: string): value is PaymentSortableField =>
+      sortableFields.includes(value as PaymentSortableField);
+
+    let orderBy:
+      | Prisma.PaymentOrderByWithRelationInput
+      | Prisma.PaymentOrderByWithRelationInput[] = { paymentDate: 'desc' };
+
+    if (sort) {
+      try {
+        const parsed = JSON.parse(sort);
+        if (!Array.isArray(parsed)) {
+          throw new Error('Invalid sort format');
+        }
+
+        const primarySort = (
+          parsed as Array<{ id?: string; desc?: boolean }>
+        ).find((item) => (item.id ? isSortableField(item.id) : false));
+
+        if (primarySort?.id && isSortableField(primarySort.id)) {
+          const direction: Prisma.SortOrder = primarySort.desc ? 'desc' : 'asc';
+
+          if (primarySort.id === 'memberFullName') {
+            orderBy = [
+              { member: { fullName: direction } },
+              { paymentDate: 'desc' }
+            ];
+          } else if (primarySort.id === 'paymentDate') {
+            orderBy = { paymentDate: direction };
+          } else {
+            orderBy = [
+              {
+                [primarySort.id]: direction
+              } as Prisma.PaymentOrderByWithRelationInput,
+              { paymentDate: 'desc' }
+            ];
+          }
+        }
+      } catch {
+        orderBy = { paymentDate: 'desc' };
+      }
+    }
+
     const [payments, total] = await Promise.all([
       prisma.payment.findMany({
         where,
         skip: (page - 1) * perPage,
         take: perPage,
-        orderBy: { paymentDate: 'desc' },
+        orderBy,
         include: {
           member: true,
           paymentAllocations: {

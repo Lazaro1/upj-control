@@ -17,7 +17,8 @@ export async function getCashTransactions(
   type?: string | string[],
   category?: string,
   dateFrom?: string,
-  dateTo?: string
+  dateTo?: string,
+  sort?: string
 ) {
   try {
     const { orgId, orgRole } = await auth();
@@ -55,12 +56,59 @@ export async function getCashTransactions(
       }
     }
 
+    const sortableFields = [
+      'transactionDate',
+      'type',
+      'category',
+      'description',
+      'amount',
+      'createdAt'
+    ] as const;
+    type CashSortableField = (typeof sortableFields)[number];
+
+    const isSortableField = (value: string): value is CashSortableField =>
+      sortableFields.includes(value as CashSortableField);
+
+    let orderBy:
+      | Prisma.CashTransactionOrderByWithRelationInput
+      | Prisma.CashTransactionOrderByWithRelationInput[] = {
+      transactionDate: 'desc'
+    };
+
+    if (sort) {
+      try {
+        const parsed = JSON.parse(sort);
+        if (!Array.isArray(parsed)) {
+          throw new Error('Invalid sort format');
+        }
+
+        const primarySort = (
+          parsed as Array<{ id?: string; desc?: boolean }>
+        ).find((item) => (item.id ? isSortableField(item.id) : false));
+
+        if (primarySort?.id && isSortableField(primarySort.id)) {
+          const direction: Prisma.SortOrder = primarySort.desc ? 'desc' : 'asc';
+          orderBy =
+            primarySort.id === 'transactionDate'
+              ? { transactionDate: direction }
+              : [
+                  {
+                    [primarySort.id]: direction
+                  } as Prisma.CashTransactionOrderByWithRelationInput,
+                  { transactionDate: 'desc' }
+                ];
+        }
+      } catch {
+        orderBy = { transactionDate: 'desc' };
+      }
+    }
+
     const [transactions, total] = await Promise.all([
       prisma.cashTransaction.findMany({
         where,
         skip: (page - 1) * perPage,
         take: perPage,
-        orderBy: { transactionDate: 'desc' },
+        orderBy,
         include: {
           relatedPayment: true
         }

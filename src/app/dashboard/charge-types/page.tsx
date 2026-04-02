@@ -23,8 +23,14 @@ export default async function ChargeTypesPage(props: ChargeTypesPageProps) {
   const { chargeTypes, total, pageCount } = await getChargeTypes({
     page: params.page,
     perPage: params.perPage,
+    sort: params.sort ?? undefined,
     search: params.name ?? undefined,
-    active: params.status === 'false' ? false : params.status === 'true' ? true : undefined
+    active:
+      params.status === 'false'
+        ? false
+        : params.status === 'true'
+          ? true
+          : undefined
   });
 
   return (

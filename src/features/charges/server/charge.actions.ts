@@ -7,7 +7,7 @@ import {
   type ChargeFormValues,
   chargeFormSchema
 } from '../schemas/charge.schema';
-import { Prisma } from '@prisma/client';
+import { ChargeStatus, Prisma } from '@prisma/client';
 import { writeAuditLog } from '@/features/audit-logs/server/audit-log-writer';
 
 export async function getCharges(
@@ -34,7 +34,18 @@ export async function getCharges(
     }
 
     if (status) {
-      where.status = status as any;
+      const parsedStatuses = status
+        .split(',')
+        .map((value) => value.trim())
+        .filter((value): value is ChargeStatus =>
+          Object.values(ChargeStatus).includes(value as ChargeStatus)
+        );
+
+      if (parsedStatuses.length === 1) {
+        where.status = parsedStatuses[0];
+      } else if (parsedStatuses.length > 1) {
+        where.status = { in: parsedStatuses };
+      }
     }
 
     if (memberId) {

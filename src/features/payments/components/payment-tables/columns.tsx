@@ -28,6 +28,7 @@ export type PaymentSerializable = {
 
 export const columns: ColumnDef<PaymentSerializable>[] = [
   {
+    id: 'memberFullName',
     accessorKey: 'member.fullName',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Membro' />
@@ -35,12 +36,15 @@ export const columns: ColumnDef<PaymentSerializable>[] = [
     cell: ({ row }) => (
       <div className='flex flex-col'>
         <span className='font-medium'>{row.original.member.fullName}</span>
-        <span className='text-xs text-muted-foreground'>{row.original.member.email}</span>
+        <span className='text-muted-foreground text-xs'>
+          {row.original.member.email}
+        </span>
       </div>
     ),
     enableColumnFilter: true
   },
   {
+    id: 'amount',
     accessorKey: 'amount',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Valor Pago' />
@@ -49,17 +53,20 @@ export const columns: ColumnDef<PaymentSerializable>[] = [
       const amount = parseFloat(row.original.amount.toString());
       const formatted = new Intl.NumberFormat('pt-BR', {
         style: 'currency',
-        currency: 'BRL',
+        currency: 'BRL'
       }).format(amount);
-      return <div className="font-semibold">{formatted}</div>;
+      return <div className='font-semibold'>{formatted}</div>;
     }
   },
   {
+    id: 'paymentMethod',
     accessorKey: 'paymentMethod',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Método' />
     ),
-    cell: ({ row }) => <span className="capitalize">{row.original.paymentMethod}</span>,
+    cell: ({ row }) => (
+      <span className='capitalize'>{row.original.paymentMethod}</span>
+    ),
     enableColumnFilter: true,
     meta: {
       label: 'Método',
@@ -74,6 +81,7 @@ export const columns: ColumnDef<PaymentSerializable>[] = [
     }
   },
   {
+    id: 'paymentDate',
     accessorKey: 'paymentDate',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Data do Pagto.' />
