@@ -3,8 +3,12 @@
 import { prisma } from '@/lib/db';
 import { auth } from '@clerk/nextjs/server';
 import { revalidatePath } from 'next/cache';
-import { type ChargeFormValues, chargeFormSchema } from '../schemas/charge.schema';
+import {
+  type ChargeFormValues,
+  chargeFormSchema
+} from '../schemas/charge.schema';
 import { Prisma } from '@prisma/client';
+import { writeAuditLog } from '@/features/audit-logs/server/audit-log-writer';
 
 export async function getCharges(
   page = 1,
@@ -28,11 +32,11 @@ export async function getCharges(
         { member: { fullName: { contains: search, mode: 'insensitive' } } }
       ];
     }
-    
+
     if (status) {
       where.status = status as any;
     }
-    
+
     if (memberId) {
       where.memberId = memberId;
     }
@@ -63,7 +67,7 @@ export async function getCharges(
     ]);
 
     // Parse the data into a serializable interface
-    const formattedCharges = charges.map(charge => ({
+    const formattedCharges = charges.map((charge) => ({
       id: charge.id,
       memberId: charge.memberId,
       chargeTypeId: charge.chargeTypeId,
@@ -116,7 +120,7 @@ export async function getChargeById(id: string) {
         competenceDate: charge.competenceDate.toISOString(),
         dueDate: charge.dueDate.toISOString(),
         createdAt: charge.createdAt.toISOString(),
-        updatedAt: charge.updatedAt.toISOString(),
+        updatedAt: charge.updatedAt.toISOString()
       }
     };
   } catch (error: any) {
@@ -126,8 +130,8 @@ export async function getChargeById(id: string) {
 
 export async function createCharge(data: ChargeFormValues) {
   try {
-    const { userId } = await auth();
-    if (!userId) throw new Error('Não autorizado');
+    const { userId, orgId } = await auth();
+    if (!userId || !orgId) throw new Error('Não autorizado');
 
     const validatedData = chargeFormSchema.parse(data);
 
@@ -144,17 +148,14 @@ export async function createCharge(data: ChargeFormValues) {
       }
     });
 
-    const isMember = await prisma.member.findUnique({ where: { clerkUserId: userId } });
-
     // Auditoria
-    await prisma.auditLog.create({
-      data: {
-        actorUserId: isMember ? userId : null,
-        action: 'charge.created',
-        entityType: 'charge',
-        entityId: charge.id,
-        newDataJson: JSON.parse(JSON.stringify(charge))
-      }
+    await writeAuditLog(prisma, {
+      orgId,
+      actorUserId: userId,
+      action: 'charge.created',
+      entityType: 'charge',
+      entityId: charge.id,
+      newDataJson: JSON.parse(JSON.stringify(charge))
     });
 
     revalidatePath('/dashboard/charges');
@@ -165,23 +166,33 @@ export async function createCharge(data: ChargeFormValues) {
   }
 }
 
-export async function updateCharge(id: string, data: Partial<ChargeFormValues>) {
+export async function updateCharge(
+  id: string,
+  data: Partial<ChargeFormValues>
+) {
   try {
-    const { userId } = await auth();
-    if (!userId) throw new Error('Não autorizado');
+    const { userId, orgId } = await auth();
+    if (!userId || !orgId) throw new Error('Não autorizado');
 
     // First fetch the old state
     const oldCharge = await prisma.charge.findUnique({ where: { id } });
     if (!oldCharge) throw new Error('Cobrança não encontrada');
 
-    if (oldCharge.status !== 'pendente' && data.amount && data.amount !== Number(oldCharge.amount)) {
-      throw new Error('Não é possível alterar o valor de uma cobrança após iniciados os pagamentos.');
+    if (
+      oldCharge.status !== 'pendente' &&
+      data.amount &&
+      data.amount !== Number(oldCharge.amount)
+    ) {
+      throw new Error(
+        'Não é possível alterar o valor de uma cobrança após iniciados os pagamentos.'
+      );
     }
 
     const payload: any = { ...data };
-    
-    // Transform dates properly 
-    if (data.competenceDate) payload.competenceDate = new Date(data.competenceDate);
+
+    // Transform dates properly
+    if (data.competenceDate)
+      payload.competenceDate = new Date(data.competenceDate);
     if (data.dueDate) payload.dueDate = new Date(data.dueDate);
 
     const updatedCharge = await prisma.charge.update({
@@ -189,17 +200,14 @@ export async function updateCharge(id: string, data: Partial<ChargeFormValues>) 
       data: payload
     });
 
-    const isMember = await prisma.member.findUnique({ where: { clerkUserId: userId } });
-
-    await prisma.auditLog.create({
-      data: {
-        actorUserId: isMember ? userId : null,
-        action: 'charge.updated',
-        entityType: 'charge',
-        entityId: id,
-        oldDataJson: JSON.parse(JSON.stringify(oldCharge)),
-        newDataJson: JSON.parse(JSON.stringify(updatedCharge))
-      }
+    await writeAuditLog(prisma, {
+      orgId,
+      actorUserId: userId,
+      action: 'charge.updated',
+      entityType: 'charge',
+      entityId: id,
+      oldDataJson: JSON.parse(JSON.stringify(oldCharge)),
+      newDataJson: JSON.parse(JSON.stringify(updatedCharge))
     });
 
     revalidatePath('/dashboard/charges');
@@ -212,14 +220,16 @@ export async function updateCharge(id: string, data: Partial<ChargeFormValues>) 
 
 export async function cancelCharge(id: string) {
   try {
-    const { userId } = await auth();
-    if (!userId) throw new Error('Não autorizado');
+    const { userId, orgId } = await auth();
+    if (!userId || !orgId) throw new Error('Não autorizado');
 
     const oldCharge = await prisma.charge.findUnique({ where: { id } });
     if (!oldCharge) throw new Error('Cobrança não encontrada');
-    
+
     if (oldCharge.status !== 'pendente') {
-      throw new Error('Apenas cobranças pendentes podem ser canceladas. Outras precisam ser estornadas ou perdoadas oficialmente.');
+      throw new Error(
+        'Apenas cobranças pendentes podem ser canceladas. Outras precisam ser estornadas ou perdoadas oficialmente.'
+      );
     }
 
     const updatedCharge = await prisma.charge.update({
@@ -227,17 +237,14 @@ export async function cancelCharge(id: string) {
       data: { status: 'cancelada' }
     });
 
-    const isMember = await prisma.member.findUnique({ where: { clerkUserId: userId } });
-
-    await prisma.auditLog.create({
-      data: {
-        actorUserId: isMember ? userId : null,
-        action: 'charge.cancelled',
-        entityType: 'charge',
-        entityId: id,
-        oldDataJson: JSON.parse(JSON.stringify(oldCharge)),
-        newDataJson: JSON.parse(JSON.stringify(updatedCharge))
-      }
+    await writeAuditLog(prisma, {
+      orgId,
+      actorUserId: userId,
+      action: 'charge.cancelled',
+      entityType: 'charge',
+      entityId: id,
+      oldDataJson: JSON.parse(JSON.stringify(oldCharge)),
+      newDataJson: JSON.parse(JSON.stringify(updatedCharge))
     });
 
     revalidatePath('/dashboard/charges');

@@ -3,7 +3,12 @@
 import { prisma } from '@/lib/db';
 import { MemberStatus } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
-import { memberFormSchema, type MemberFormValues } from '../schemas/member.schema';
+import {
+  memberFormSchema,
+  type MemberFormValues
+} from '../schemas/member.schema';
+import { auth } from '@clerk/nextjs/server';
+import { writeAuditLog } from '@/features/audit-logs/server/audit-log-writer';
 
 export async function getMembers({
   page = 1,
@@ -119,5 +124,28 @@ export async function deleteMember(id: string) {
   });
 
   revalidatePath('/dashboard/members');
+  return { success: true };
+}
+
+export async function logRolePermissionChanged(params: {
+  targetUserId: string;
+  oldRole?: string;
+  newRole: string;
+}) {
+  const { userId, orgId } = await auth();
+  if (!userId || !orgId) {
+    return { success: false, error: 'Nao autorizado' };
+  }
+
+  await writeAuditLog(prisma, {
+    orgId,
+    actorUserId: userId,
+    action: 'role.permission_changed',
+    entityType: 'role',
+    entityId: params.targetUserId,
+    oldDataJson: params.oldRole ? { role: params.oldRole } : undefined,
+    newDataJson: { role: params.newRole }
+  });
+
   return { success: true };
 }

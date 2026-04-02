@@ -34,8 +34,8 @@ export default function PageContainer({
   isLoading?: boolean;
   access?: boolean;
   accessFallback?: React.ReactNode;
-  pageTitle?: string;
-  pageDescription?: string;
+  pageTitle?: React.ReactNode;
+  pageDescription?: React.ReactNode;
   infoContent?: InfobarContent;
   pageHeaderAction?: React.ReactNode;
 }) {

@@ -3,8 +3,12 @@
 import { prisma } from '@/lib/db';
 import { auth } from '@clerk/nextjs/server';
 import { revalidatePath } from 'next/cache';
-import { type CashTransactionFormValues, cashTransactionSchema } from '../schemas/cash-transaction.schema';
+import {
+  type CashTransactionFormValues,
+  cashTransactionSchema
+} from '../schemas/cash-transaction.schema';
 import { Prisma } from '@prisma/client';
+import { writeAuditLog } from '@/features/audit-logs/server/audit-log-writer';
 
 export async function getCashTransactions(
   page = 1,
@@ -64,7 +68,7 @@ export async function getCashTransactions(
       prisma.cashTransaction.count({ where })
     ]);
 
-    const formattedTransactions = transactions.map(tx => ({
+    const formattedTransactions = transactions.map((tx) => ({
       id: tx.id,
       type: tx.type,
       category: tx.category,
@@ -109,16 +113,13 @@ export async function createCashTransaction(data: CashTransactionFormValues) {
       }
     });
 
-    const isMember = await prisma.member.findUnique({ where: { clerkUserId: userId } });
-
-    await prisma.auditLog.create({
-      data: {
-        actorUserId: isMember ? userId : null,
-        action: 'cash_transaction.created',
-        entityType: 'cash_transaction',
-        entityId: transaction.id,
-        newDataJson: JSON.parse(JSON.stringify(transaction))
-      }
+    await writeAuditLog(prisma, {
+      orgId,
+      actorUserId: userId,
+      action: 'cash_transaction.created',
+      entityType: 'cash_transaction',
+      entityId: transaction.id,
+      newDataJson: JSON.parse(JSON.stringify(transaction))
     });
 
     revalidatePath('/dashboard/cash-transactions');

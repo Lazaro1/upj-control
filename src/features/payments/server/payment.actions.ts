@@ -3,8 +3,12 @@
 import { prisma } from '@/lib/db';
 import { auth } from '@clerk/nextjs/server';
 import { revalidatePath } from 'next/cache';
-import { type PaymentFormValues, paymentSchema } from '../schemas/payment.schema';
+import {
+  type PaymentFormValues,
+  paymentSchema
+} from '../schemas/payment.schema';
 import { Prisma } from '@prisma/client';
+import { writeAuditLog } from '@/features/audit-logs/server/audit-log-writer';
 
 export async function getPayments(
   page = 1,
@@ -50,7 +54,7 @@ export async function getPayments(
       prisma.payment.count({ where })
     ]);
 
-    const formattedPayments = payments.map(p => ({
+    const formattedPayments = payments.map((p) => ({
       id: p.id,
       memberId: p.memberId,
       member: {
@@ -63,7 +67,7 @@ export async function getPayments(
       paymentMethod: p.paymentMethod || 'Outros',
       notes: p.notes,
       createdAt: p.createdAt.toISOString(),
-      allocations: p.paymentAllocations.map(a => ({
+      allocations: p.paymentAllocations.map((a) => ({
         id: a.id,
         chargeId: a.chargeId,
         allocatedAmount: Number(a.allocatedAmount),
@@ -97,8 +101,11 @@ export async function getPendingChargesByMember(memberId: string) {
       orderBy: { dueDate: 'asc' }
     });
 
-    const parsed = charges.map(c => {
-      const totalPaid = c.paymentAllocations.reduce((acc, alloc) => acc + Number(alloc.allocatedAmount), 0);
+    const parsed = charges.map((c) => {
+      const totalPaid = c.paymentAllocations.reduce(
+        (acc, alloc) => acc + Number(alloc.allocatedAmount),
+        0
+      );
       return {
         id: c.id,
         dueDate: c.dueDate.toISOString(),
@@ -120,22 +127,26 @@ export async function getPendingChargesByMember(memberId: string) {
 
 export async function createPayment(data: PaymentFormValues) {
   try {
-    const { userId } = await auth();
-    if (!userId) throw new Error('Não autorizado');
+    const { userId, orgId } = await auth();
+    if (!userId || !orgId) throw new Error('Não autorizado');
 
     const validatedData = paymentSchema.parse(data);
 
     // Validação de segurança matemática
-    const allocatedSum = validatedData.allocations.reduce((sum, a) => sum + a.allocatedAmount, 0);
+    const allocatedSum = validatedData.allocations.reduce(
+      (sum, a) => sum + a.allocatedAmount,
+      0
+    );
     // Tolerate small floating point precision issues, but technically we deal with cents or two decimals.
     // If the allocated sum differs from the total amount by more than 0.01 it is invalid.
     if (Math.abs(allocatedSum - validatedData.amount) > 0.01) {
-      if (allocatedSum > validatedData.amount) throw new Error('O valor alocado nas cobranças ultrapassa o valor total do pagamento.');
-      // Observação: Para esta iteração, exigimos alocação exata para simplificar, 
+      if (allocatedSum > validatedData.amount)
+        throw new Error(
+          'O valor alocado nas cobranças ultrapassa o valor total do pagamento.'
+        );
+      // Observação: Para esta iteração, exigimos alocação exata para simplificar,
       // mas se `allocatedSum < amount`, seria "crédito gerado" na conta corrente, o que implementaremos na fase 3.
     }
-
-    const isMember = await prisma.member.findUnique({ where: { clerkUserId: userId } });
 
     // Iniciar Transação
     await prisma.$transaction(async (tx) => {
@@ -149,7 +160,7 @@ export async function createPayment(data: PaymentFormValues) {
           notes: validatedData.notes,
           createdBy: userId,
           paymentAllocations: {
-            create: validatedData.allocations.map(a => ({
+            create: validatedData.allocations.map((a) => ({
               chargeId: a.chargeId,
               allocatedAmount: a.allocatedAmount
             }))
@@ -168,8 +179,11 @@ export async function createPayment(data: PaymentFormValues) {
           where: { chargeId: alloc.chargeId }
         });
 
-        const currentTotalPaid = allAllocationsForCharge.reduce((sum, pa) => sum + Number(pa.allocatedAmount), 0);
-        
+        const currentTotalPaid = allAllocationsForCharge.reduce(
+          (sum, pa) => sum + Number(pa.allocatedAmount),
+          0
+        );
+
         // Determina o novo status
         let newStatus = charge.status;
         if (currentTotalPaid >= Number(charge.amount) - 0.01) {
@@ -186,14 +200,24 @@ export async function createPayment(data: PaymentFormValues) {
         }
       }
 
-      // 3. Auditoria
-      await tx.auditLog.create({
-        data: {
-          actorUserId: isMember ? userId : null,
-          action: 'payment.created',
-          entityType: 'payment',
-          entityId: payment.id,
-          newDataJson: JSON.parse(JSON.stringify(payment))
+      await writeAuditLog(tx, {
+        orgId,
+        actorUserId: userId,
+        action: 'payment.created',
+        entityType: 'payment',
+        entityId: payment.id,
+        newDataJson: JSON.parse(JSON.stringify(payment))
+      });
+
+      await writeAuditLog(tx, {
+        orgId,
+        actorUserId: userId,
+        action: 'payment.allocated',
+        entityType: 'payment_allocation',
+        entityId: payment.id,
+        newDataJson: {
+          paymentId: payment.id,
+          allocations: validatedData.allocations
         }
       });
     });
@@ -203,6 +227,86 @@ export async function createPayment(data: PaymentFormValues) {
     return { success: true };
   } catch (error: any) {
     console.error('Error creating payment:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function reversePayment(paymentId: string) {
+  try {
+    const { userId, orgId } = await auth();
+    if (!userId || !orgId) throw new Error('Nao autorizado');
+
+    await prisma.$transaction(async (tx) => {
+      const payment = await tx.payment.findUnique({
+        where: { id: paymentId },
+        include: {
+          paymentAllocations: true
+        }
+      });
+
+      if (!payment) {
+        throw new Error('Pagamento nao encontrado');
+      }
+
+      const oldPaymentData = JSON.parse(JSON.stringify(payment));
+      const affectedChargeIds = payment.paymentAllocations.map(
+        (a) => a.chargeId
+      );
+
+      await tx.paymentAllocation.deleteMany({
+        where: { paymentId }
+      });
+
+      await tx.payment.delete({
+        where: { id: paymentId }
+      });
+
+      for (const chargeId of affectedChargeIds) {
+        const charge = await tx.charge.findUnique({ where: { id: chargeId } });
+        if (!charge) continue;
+
+        const allocations = await tx.paymentAllocation.findMany({
+          where: { chargeId }
+        });
+
+        const totalPaid = allocations.reduce(
+          (sum, alloc) => sum + Number(alloc.allocatedAmount),
+          0
+        );
+
+        let nextStatus = charge.status;
+        if (totalPaid <= 0) nextStatus = 'pendente';
+        else if (totalPaid < Number(charge.amount))
+          nextStatus = 'parcialmente_paga';
+        else nextStatus = 'paga';
+
+        if (nextStatus !== charge.status) {
+          await tx.charge.update({
+            where: { id: chargeId },
+            data: { status: nextStatus as any }
+          });
+        }
+      }
+
+      await writeAuditLog(tx, {
+        orgId,
+        actorUserId: userId,
+        action: 'payment.reversed',
+        entityType: 'payment',
+        entityId: paymentId,
+        oldDataJson: oldPaymentData,
+        newDataJson: {
+          reversed: true,
+          reversedAt: new Date().toISOString()
+        }
+      });
+    });
+
+    revalidatePath('/dashboard/payments');
+    revalidatePath('/dashboard/charges');
+
+    return { success: true };
+  } catch (error: any) {
     return { success: false, error: error.message };
   }
 }

@@ -518,3 +518,10 @@ See "Theming System" section above or `docs/themes.md`.
 5. **Follow existing patterns** - look at similar components before creating new ones
 6. **Environment variables** - prefix with `NEXT_PUBLIC_` for client-side access
 7. **shadcn components** - don't modify files in `src/components/ui/` directly; extend them instead
+
+## Active Technologies
+- TypeScript 5.7 (strict), React 19, Next.js 16 + Next.js App Router, Prisma Client, Clerk, shadcn/ui (002-auditoria-reforcada)
+- PostgreSQL via Prisma (`audit_logs`, `charges`, `payments`, `members`, `charge_types`, `recurring_charge_rules`, `cash_transactions`) (002-auditoria-reforcada)
+
+## Recent Changes
+- 002-auditoria-reforcada: Added TypeScript 5.7 (strict), React 19, Next.js 16 + Next.js App Router, Prisma Client, Clerk, shadcn/ui
