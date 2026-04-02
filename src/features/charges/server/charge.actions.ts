@@ -115,9 +115,17 @@ export async function getChargeById(id: string) {
   try {
     const charge = await prisma.charge.findUnique({
       where: { id },
-      include: {
-        member: true,
-        chargeType: true
+      select: {
+        id: true,
+        memberId: true,
+        chargeTypeId: true,
+        competenceDate: true,
+        dueDate: true,
+        description: true,
+        amount: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true
       }
     });
 
@@ -126,7 +134,11 @@ export async function getChargeById(id: string) {
     return {
       success: true,
       data: {
-        ...charge,
+        id: charge.id,
+        memberId: charge.memberId,
+        chargeTypeId: charge.chargeTypeId,
+        description: charge.description,
+        status: charge.status,
         amount: Number(charge.amount),
         competenceDate: charge.competenceDate.toISOString(),
         dueDate: charge.dueDate.toISOString(),

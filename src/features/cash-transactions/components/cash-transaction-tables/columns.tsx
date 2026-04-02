@@ -65,7 +65,11 @@ export const columns: ColumnDef<CashTransactionSerializable>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Categoria' />
     ),
-    cell: ({ row }) => <span>{row.original.category}</span>,
+    cell: ({ row }) => (
+      <span className='block max-w-[140px] truncate'>
+        {row.original.category}
+      </span>
+    ),
     enableColumnFilter: true,
     meta: {
       label: 'Categoria',
@@ -76,11 +80,13 @@ export const columns: ColumnDef<CashTransactionSerializable>[] = [
     id: 'description',
     accessorKey: 'description',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Descrição' />
+      <div className='hidden lg:block'>
+        <DataTableColumnHeader column={column} title='Descrição' />
+      </div>
     ),
     cell: ({ row }) => (
       <span
-        className='block max-w-[200px] truncate'
+        className='hidden max-w-[220px] truncate lg:block'
         title={row.original.description || ''}
       >
         {row.original.description || '-'}
@@ -104,6 +110,10 @@ export const columns: ColumnDef<CashTransactionSerializable>[] = [
   },
   {
     id: 'actions',
-    cell: ({ row }) => <CellAction transaction={row.original} />
+    cell: ({ row }) => (
+      <div className='flex justify-end'>
+        <CellAction transaction={row.original} />
+      </div>
+    )
   }
 ];

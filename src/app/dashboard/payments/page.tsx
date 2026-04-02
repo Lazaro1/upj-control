@@ -31,7 +31,10 @@ export default async function PaymentsPage(props: PageProps) {
       pageTitle='Pagamentos'
       pageDescription='Registre recebimentos e dê baixa em cobranças pendentes.'
       pageHeaderAction={
-        <Link href='/dashboard/payments/new' className={cn(buttonVariants())}>
+        <Link
+          href='/dashboard/payments/new'
+          className={cn(buttonVariants(), 'w-full justify-center sm:w-auto')}
+        >
           <IconPlus className='mr-2 h-4 w-4' /> Nova Baixa
         </Link>
       }

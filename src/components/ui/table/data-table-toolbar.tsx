@@ -15,6 +15,9 @@ import { Cross2Icon } from '@radix-ui/react-icons';
 interface DataTableToolbarProps<TData> extends React.ComponentProps<'div'> {
   table: Table<TData>;
   searchBar?: React.ReactNode;
+  hasCustomFilters?: boolean;
+  onResetFilters?: () => void;
+  resetLabel?: string;
 }
 
 export function DataTableToolbar<TData>({
@@ -22,9 +25,13 @@ export function DataTableToolbar<TData>({
   children,
   className,
   searchBar,
+  hasCustomFilters = false,
+  onResetFilters,
+  resetLabel,
   ...props
 }: DataTableToolbarProps<TData>) {
-  const isFiltered = table.getState().columnFilters.length > 0;
+  const isFiltered =
+    table.getState().columnFilters.length > 0 || hasCustomFilters;
 
   const columns = React.useMemo(
     () => table.getAllColumns().filter((column) => column.getCanFilter()),
@@ -33,19 +40,20 @@ export function DataTableToolbar<TData>({
 
   const onReset = React.useCallback(() => {
     table.resetColumnFilters();
-  }, [table]);
+    onResetFilters?.();
+  }, [onResetFilters, table]);
 
   return (
     <div
       role='toolbar'
       aria-orientation='horizontal'
       className={cn(
-        'flex w-full items-start justify-between gap-2 p-1',
+        'flex w-full flex-col items-start gap-2 p-1 sm:flex-row sm:justify-between',
         className
       )}
       {...props}
     >
-      <div className='flex flex-1 flex-wrap items-center gap-2'>
+      <div className='flex w-full min-w-0 flex-1 flex-wrap items-center gap-2'>
         {searchBar}
         {columns.map((column) => (
           <DataTableToolbarFilter key={column.id} column={column} />
@@ -59,11 +67,11 @@ export function DataTableToolbar<TData>({
             onClick={onReset}
           >
             <Cross2Icon />
-            Reset
+            {resetLabel ?? 'Reset'}
           </Button>
         )}
       </div>
-      <div className='flex items-center gap-2'>
+      <div className='flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end'>
         {children}
         <DataTableViewOptions table={table} />
       </div>

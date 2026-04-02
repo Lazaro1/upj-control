@@ -10,6 +10,18 @@ import {
 import { Prisma } from '@prisma/client';
 import { writeAuditLog } from '@/features/audit-logs/server/audit-log-writer';
 
+function parseDateAtBoundary(value: string, boundary: 'start' | 'end'): Date {
+  const [year, month, day] = value.split('-').map(Number);
+  const hour = boundary === 'start' ? 0 : 23;
+  const minute = boundary === 'start' ? 0 : 59;
+  const second = boundary === 'start' ? 0 : 59;
+  const millisecond = boundary === 'start' ? 0 : 999;
+
+  return new Date(
+    Date.UTC(year, month - 1, day, hour, minute, second, millisecond)
+  );
+}
+
 export async function getCashTransactions(
   page = 1,
   perPage = 10,
@@ -48,11 +60,11 @@ export async function getCashTransactions(
 
     if (dateFrom || dateTo) {
       where.transactionDate = {};
-      if (dateFrom) where.transactionDate.gte = new Date(dateFrom);
+      if (dateFrom) {
+        where.transactionDate.gte = parseDateAtBoundary(dateFrom, 'start');
+      }
       if (dateTo) {
-        const toDate = new Date(dateTo);
-        toDate.setHours(23, 59, 59, 999);
-        where.transactionDate.lte = toDate;
+        where.transactionDate.lte = parseDateAtBoundary(dateTo, 'end');
       }
     }
 
@@ -188,11 +200,11 @@ export async function getCashSummary(dateFrom?: string, dateTo?: string) {
 
     if (dateFrom || dateTo) {
       where.transactionDate = {};
-      if (dateFrom) where.transactionDate.gte = new Date(dateFrom);
+      if (dateFrom) {
+        where.transactionDate.gte = parseDateAtBoundary(dateFrom, 'start');
+      }
       if (dateTo) {
-        const toDate = new Date(dateTo);
-        toDate.setHours(23, 59, 59, 999);
-        where.transactionDate.lte = toDate;
+        where.transactionDate.lte = parseDateAtBoundary(dateTo, 'end');
       }
     }
 

@@ -36,11 +36,14 @@ export default async function CashTransactionsPage(props: PageProps) {
 
   return (
     <PageContainer
-      scrollable={true}
+      scrollable={false}
       pageTitle='Caixa Geral'
       pageDescription='Registre entradas e saídas financeiras da loja.'
       pageHeaderAction={
-        <Link href='/dashboard/cash-transactions/new' className={cn(buttonVariants())}>
+        <Link
+          href='/dashboard/cash-transactions/new'
+          className={cn(buttonVariants(), 'w-full justify-center sm:w-auto')}
+        >
           <IconPlus className='mr-2 h-4 w-4' /> Novo Lançamento
         </Link>
       }

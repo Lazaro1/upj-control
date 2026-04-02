@@ -19,7 +19,9 @@ export default async function MemberStatementPage({
 
   return (
     <PageContainer scrollable={true}>
-      <StatementView memberId={memberId} />
+      <div className='min-w-0'>
+        <StatementView memberId={memberId} />
+      </div>
     </PageContainer>
   );
 }

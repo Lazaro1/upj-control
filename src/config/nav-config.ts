@@ -51,7 +51,7 @@ export const navItems: NavItem[] = [
     title: 'Cobranças',
     url: '#',
     icon: 'charges',
-    isActive: true,
+    isActive: false,
     shortcut: ['c', 'b'],
     items: [
       {
@@ -110,7 +110,7 @@ export const navItems: NavItem[] = [
     title: 'Minha Conta',
     url: '#',
     icon: 'account',
-    isActive: true,
+    isActive: false,
     items: [
       {
         title: 'Meu Perfil',
