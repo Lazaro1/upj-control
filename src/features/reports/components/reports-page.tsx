@@ -3,6 +3,14 @@
 import { useEffect, useState, type ReactElement } from 'react';
 import { format, startOfMonth } from 'date-fns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
+import { REPORT_TABS, type ReportsTabValue } from './report-tab-options';
 import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/icons';
 import { IconDownload, IconFileTypePdf } from '@tabler/icons-react';
@@ -25,13 +33,7 @@ import {
   type DelinquencyReportData
 } from '../server/report.actions';
 
-type ReportsTabValue =
-  | 'income'
-  | 'expenses'
-  | 'balance'
-  | 'by-charge-type'
-  | 'member-position'
-  | 'delinquency';
+
 
 interface IncomeData {
   paymentEntries: Array<{ source: string; total: number }>;
@@ -426,18 +428,35 @@ export function ReportsPage() {
         <ReportFilters onFilter={handleGenerate} isLoading={isLoading} />
       )}
 
+      <div className='space-y-2 sm:hidden'>
+        <label className='text-foreground text-sm font-medium'>
+          Tipo de relatorio
+        </label>
+        <Select value={activeTab} onValueChange={handleTabChange}>
+          <SelectTrigger className='w-full'>
+            <SelectValue placeholder='Selecione um relatorio' />
+          </SelectTrigger>
+          <SelectContent>
+            {REPORT_TABS.map((tab) => (
+              <SelectItem key={tab.value} value={tab.value}>
+                {tab.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       <Tabs
         value={activeTab}
         onValueChange={handleTabChange}
         className='space-y-4'
       >
-        <TabsList className='h-auto flex-wrap'>
-          <TabsTrigger value='income'>Entradas</TabsTrigger>
-          <TabsTrigger value='expenses'>Saidas</TabsTrigger>
-          <TabsTrigger value='balance'>Saldo</TabsTrigger>
-          <TabsTrigger value='by-charge-type'>Por Tipo de Cobranca</TabsTrigger>
-          <TabsTrigger value='member-position'>Posicao Individual</TabsTrigger>
-          <TabsTrigger value='delinquency'>Inadimplencia</TabsTrigger>
+        <TabsList className='hidden h-auto flex-wrap sm:flex'>
+          {REPORT_TABS.map((tab) => (
+            <TabsTrigger key={tab.value} value={tab.value}>
+              {tab.label}
+            </TabsTrigger>
+          ))}
         </TabsList>
 
         <div className='text-muted-foreground text-xs'>
