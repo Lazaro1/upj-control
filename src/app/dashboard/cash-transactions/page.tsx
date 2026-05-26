@@ -22,7 +22,7 @@ type PageProps = {
 
 export default async function CashTransactionsPage(props: PageProps) {
   const { userId, orgId, orgRole } = await auth();
-  if (!orgId) redirect('/dashboard/workspaces');
+  if (!orgId) redirect('/auth/sign-in');
   if (orgRole === 'org:member') {
     const landing = await resolveDashboardLanding({ userId, orgRole });
     redirect(landing);

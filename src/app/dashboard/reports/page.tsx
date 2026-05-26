@@ -11,7 +11,7 @@ export default async function ReportsRoutePage() {
   const { orgId, orgRole } = await auth();
 
   if (!orgId) {
-    redirect('/dashboard/workspaces');
+    redirect('/auth/sign-in');
   }
 
   if (orgRole === 'org:member') {

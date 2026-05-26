@@ -10,7 +10,7 @@ export const metadata = {
 
 export default async function NewChargePage() {
   const { orgId } = await auth();
-  if (!orgId) redirect('/dashboard/workspaces');
+  if (!orgId) redirect('/auth/sign-in');
 
   // Load members and charge types to populate the form
   const [members, chargeTypes] = await Promise.all([
@@ -26,7 +26,7 @@ export default async function NewChargePage() {
     })
   ]);
 
-  const formattedChargeTypes = chargeTypes.map(c => ({
+  const formattedChargeTypes = chargeTypes.map((c) => ({
     ...c,
     defaultAmount: c.defaultAmount ? Number(c.defaultAmount) : null
   }));

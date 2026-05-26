@@ -13,7 +13,7 @@ export default async function AuditLogsPage() {
   const { orgId, orgRole } = await auth();
 
   if (!orgId) {
-    redirect('/dashboard/workspaces');
+    redirect('/auth/sign-in');
   }
 
   if (orgRole === 'org:member') {

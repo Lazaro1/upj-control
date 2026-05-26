@@ -20,7 +20,7 @@ type PageProps = {
 
 export default async function ChargesPage(props: PageProps) {
   const { orgId } = await auth();
-  if (!orgId) redirect('/dashboard/workspaces');
+  if (!orgId) redirect('/auth/sign-in');
 
   const searchParams = await props.searchParams;
   searchParamsCache.parse(searchParams);

@@ -20,7 +20,7 @@ export default async function PaymentReceiptPage({
   params: Promise<{ id: string }>;
 }) {
   const { orgId } = await auth();
-  if (!orgId) redirect('/dashboard/workspaces');
+  if (!orgId) redirect('/auth/sign-in');
 
   const { id } = await params;
 

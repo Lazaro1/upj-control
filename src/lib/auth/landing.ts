@@ -73,5 +73,5 @@ export async function resolveDashboardLanding({
     return '/dashboard/portal';
   }
 
-  return '/dashboard/workspaces';
+  return '/auth/verify-cim';
 }

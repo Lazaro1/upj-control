@@ -13,7 +13,7 @@ export default async function MemberStatementPage({
   params: Promise<{ memberId: string }>;
 }) {
   const { orgId } = await auth();
-  if (!orgId) redirect('/dashboard/workspaces');
+  if (!orgId) redirect('/auth/sign-in');
 
   const { memberId } = await params;
 
