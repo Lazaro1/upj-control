@@ -203,7 +203,27 @@ export async function createPayment(data: PaymentFormValues) {
 
     // Iniciar Transação
     await prisma.$transaction(async (tx) => {
-      // 1. Cria o Pagamento
+      // 1. Validação de segurança: nenhuma alocação pode exceder o saldo devedor restante
+      for (const alloc of validatedData.allocations) {
+        const charge = await tx.charge.findUnique({
+          where: { id: alloc.chargeId },
+          include: { paymentAllocations: true }
+        });
+        if (!charge) throw new Error(`Cobrança ${alloc.chargeId} não encontrada.`);
+
+        const totalPaid = charge.paymentAllocations.reduce(
+          (sum, pa) => sum + Number(pa.allocatedAmount),
+          0
+        );
+        const remaining = Number(charge.amount) - totalPaid;
+
+        if (alloc.allocatedAmount > remaining + 0.01) {
+          throw new Error(
+            `O valor alocado para a cobrança excede o saldo devedor restante (R$ ${remaining.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}).`
+          );
+        }
+      }
+
       const payment = await tx.payment.create({
         data: {
           memberId: validatedData.memberId,

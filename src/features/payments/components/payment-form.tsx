@@ -97,13 +97,21 @@ export function PaymentForm({ members }: PaymentFormProps) {
   const toggleCharge = (charge: any) => {
     const existsIndex = currentAllocations.findIndex(a => a.chargeId === charge.id);
     const newAllocations = [...currentAllocations];
-    
+
     if (existsIndex >= 0) {
       newAllocations.splice(existsIndex, 1);
     } else {
       newAllocations.push({ chargeId: charge.id, allocatedAmount: charge.remainingAmount });
     }
-    
+
+    form.setValue('allocations', newAllocations, { shouldValidate: true });
+  };
+
+  const updateAllocationAmount = (chargeId: string, newAmount: number, maxAmount: number) => {
+    const clamped = Math.max(0, Math.min(newAmount, maxAmount));
+    const newAllocations = currentAllocations.map(a =>
+      a.chargeId === chargeId ? { ...a, allocatedAmount: clamped } : a
+    );
     form.setValue('allocations', newAllocations, { shouldValidate: true });
   };
 
@@ -325,6 +333,8 @@ export function PaymentForm({ members }: PaymentFormProps) {
                       <AnimatePresence>
                         {pendingCharges.map((charge, i) => {
                           const isSelected = currentAllocations.some(a => a.chargeId === charge.id);
+                          const allocation = currentAllocations.find(a => a.chargeId === charge.id);
+                          const remainingAfter = charge.remainingAmount - (allocation?.allocatedAmount ?? 0);
                           const isWarning = new Date(charge.dueDate) < new Date();
                           
                           return (
@@ -349,7 +359,7 @@ export function PaymentForm({ members }: PaymentFormProps) {
                               )}
                               
                               <div className='flex items-start justify-between relative z-10'>
-                                <div className='space-y-1.5'>
+                                <div className='space-y-1.5 flex-1 min-w-0'>
                                   <div className='flex items-center gap-2'>
                                     <Badge variant={charge.status === 'parcialmente_paga' ? 'secondary' : isWarning ? 'destructive' : 'outline'} className='text-[10px] uppercase font-bold tracking-wider'>
                                       {charge.status === 'parcialmente_paga' ? 'Parcial' : isWarning ? 'Vencida' : 'Pendente'}
@@ -365,14 +375,45 @@ export function PaymentForm({ members }: PaymentFormProps) {
                                   </p>
                                 </div>
                                 <div className={`
-                                  flex items-center justify-center h-6 w-6 rounded-md transition-colors
+                                  flex items-center justify-center h-6 w-6 rounded-md transition-colors flex-shrink-0 ml-2
                                   ${isSelected ? 'text-primary' : 'text-muted-foreground/30'}
                                 `}>
                                   {isSelected ? <IconCheckbox className='h-6 w-6' /> : <IconSquare className='h-6 w-6' />}
                                 </div>
                               </div>
-                              
-                              {charge.alreadyPaid > 0 && (
+
+                              {isSelected && (
+                                <div className='mt-3 space-y-2'>
+                                  <div className='flex items-center justify-between text-xs text-muted-foreground'>
+                                    <span>Original: R$ {charge.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                    <span>Já pago: R$ {charge.alreadyPaid.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                  </div>
+                                  <div className='relative'>
+                                    <span className='absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium'>R$</span>
+                                    <Input
+                                      type='number'
+                                      step='0.01'
+                                      min={0}
+                                      max={charge.remainingAmount}
+                                      value={allocation?.allocatedAmount ?? 0}
+                                      onClick={(e) => e.stopPropagation()}
+                                      onChange={(e) => {
+                                        const val = parseFloat(e.target.value);
+                                        updateAllocationAmount(charge.id, isNaN(val) ? 0 : val, charge.remainingAmount);
+                                      }}
+                                      className='h-10 pl-10 pr-4 bg-background/80 border-primary/30 text-foreground font-semibold focus-visible:ring-primary/30'
+                                    />
+                                  </div>
+                                  <p className='text-xs text-muted-foreground flex justify-between'>
+                                    <span>Saldo restante após baixa:</span>
+                                    <span className={remainingAfter < 0.01 ? 'text-emerald-500 font-medium' : 'text-amber-500 font-medium'}>
+                                      R$ {remainingAfter.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                    </span>
+                                  </p>
+                                </div>
+                              )}
+
+                              {!isSelected && charge.alreadyPaid > 0 && (
                                 <div className='mt-3 pt-3 border-t border-border/50 text-xs flex items-center gap-1 opacity-70'>
                                   <IconInfoCircle className='h-3.5 w-3.5' />
                                   Já foi pago <b>R$ {charge.alreadyPaid.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</b> deste débito.
