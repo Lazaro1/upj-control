@@ -9,6 +9,7 @@ import {
 } from '../schemas/charge.schema';
 import { ChargeStatus, Prisma } from '@prisma/client';
 import { writeAuditLog } from '@/features/audit-logs/server/audit-log-writer';
+import { requireOpenPeriod, extractMonthYear } from '@/features/period-closing/server/period-guard';
 
 export async function getCharges(
   page = 1,
@@ -158,6 +159,10 @@ export async function createCharge(data: ChargeFormValues) {
 
     const validatedData = chargeFormSchema.parse(data);
 
+    // Proteção de período fechado
+    const { month, year } = extractMonthYear(new Date(validatedData.competenceDate));
+    await requireOpenPeriod(month, year);
+
     const charge = await prisma.charge.create({
       data: {
         memberId: validatedData.memberId,
@@ -200,6 +205,16 @@ export async function updateCharge(
     // First fetch the old state
     const oldCharge = await prisma.charge.findUnique({ where: { id } });
     if (!oldCharge) throw new Error('Cobrança não encontrada');
+
+    // Proteção de período fechado — verificar competência original
+    const { month, year } = extractMonthYear(oldCharge.competenceDate);
+    await requireOpenPeriod(month, year);
+
+    // Se a competência está sendo alterada, verificar também a nova
+    if (data.competenceDate) {
+      const newCompetence = extractMonthYear(new Date(data.competenceDate));
+      await requireOpenPeriod(newCompetence.month, newCompetence.year);
+    }
 
     if (
       oldCharge.status !== 'pendente' &&
@@ -248,6 +263,10 @@ export async function cancelCharge(id: string) {
 
     const oldCharge = await prisma.charge.findUnique({ where: { id } });
     if (!oldCharge) throw new Error('Cobrança não encontrada');
+
+    // Proteção de período fechado
+    const { month, year } = extractMonthYear(oldCharge.competenceDate);
+    await requireOpenPeriod(month, year);
 
     if (oldCharge.status !== 'pendente') {
       throw new Error(

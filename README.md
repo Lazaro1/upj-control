@@ -42,3 +42,7 @@ A partir dessa base, construiremos toda a lógica financeira local da Loja utili
    ```
 
 A aplicação subirá em [http://localhost:3000](http://localhost:3000) e você já poderá ver a interface administrativa do dashboard de Tesouraria e testar o login.
+
+
+docker compose up -d
+npx prisma migrate dev

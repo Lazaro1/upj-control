@@ -1,8 +1,8 @@
 'use server';
 
 import { prisma } from '@/lib/db';
-import { auth } from '@clerk/nextjs/server';
-import { Prisma } from '@prisma/client';
+import { getOpenChargesPendingTotal } from '@/lib/charge-balance';
+import { assertMemberStatementAccess } from './statement-access';
 
 export type StatementEntry = {
   id: string;
@@ -17,8 +17,7 @@ export type StatementEntry = {
 
 export async function getMemberStatement(memberId: string) {
   try {
-    const { orgId } = await auth();
-    if (!orgId) throw new Error('Não autorizado');
+    await assertMemberStatementAccess(memberId);
 
     const [member, charges, payments] = await Promise.all([
       prisma.member.findUnique({
@@ -27,7 +26,10 @@ export async function getMemberStatement(memberId: string) {
       }),
       prisma.charge.findMany({
         where: { memberId },
-        include: { chargeType: true },
+        include: {
+          chargeType: true,
+          paymentAllocations: true
+        },
         orderBy: { dueDate: 'desc' }
       }),
       prisma.payment.findMany({
@@ -71,14 +73,7 @@ export async function getMemberStatement(memberId: string) {
     // Calculate Summary
     const totalCharged = charges.reduce((acc, c) => acc + Number(c.amount), 0);
     const totalPaid = payments.reduce((acc, p) => acc + Number(p.amount), 0);
-    const pendingAmount = charges
-      .filter(c => c.status === 'pendente' || c.status === 'parcialmente_paga')
-      .reduce((acc, c) => {
-        // This is a bit simplified, should ideally use paymentAllocations to find real remaining.
-        // For now, we'll assume the status reflects the state correctly.
-        // But let's actually fetch allocations if we want it perfect.
-        return acc + Number(c.amount); 
-      }, 0);
+    const pendingAmount = getOpenChargesPendingTotal(charges);
 
     return {
       success: true,

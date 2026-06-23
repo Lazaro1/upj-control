@@ -10,6 +10,7 @@ import {
 import { Prisma } from '@prisma/client';
 import { writeAuditLog } from '@/features/audit-logs/server/audit-log-writer';
 import { normalizeReversePaymentReason } from './reverse-payment-reason';
+import { requireOpenPeriod, extractMonthYear } from '@/features/period-closing/server/period-guard';
 
 export async function getPayments(
   page = 1,
@@ -185,6 +186,10 @@ export async function createPayment(data: PaymentFormValues) {
 
     const validatedData = paymentSchema.parse(data);
 
+    // Proteção de período fechado — verificar data do pagamento
+    const { month, year } = extractMonthYear(new Date(validatedData.paymentDate));
+    await requireOpenPeriod(month, year);
+
     // Validação de segurança matemática
     const allocatedSum = validatedData.allocations.reduce(
       (sum, a) => sum + a.allocatedAmount,
@@ -296,7 +301,8 @@ export async function createPayment(data: PaymentFormValues) {
     });
 
     revalidatePath('/dashboard/payments');
-    revalidatePath('/dashboard/charges'); // Cobranças mudam de status
+    revalidatePath('/dashboard/charges');
+    revalidatePath('/dashboard/portal');
     return { success: true };
   } catch (error: any) {
     console.error('Error creating payment:', error);
@@ -320,6 +326,22 @@ export async function reversePayment(paymentId: string, reason: string) {
 
       if (!payment) {
         throw new Error('Pagamento nao encontrado');
+      }
+
+      // Proteção de período fechado — verificar data do pagamento
+      const { month, year } = extractMonthYear(payment.paymentDate);
+      const isClosed = await tx.periodClosing.findUnique({
+        where: {
+          competenceMonth_competenceYear: {
+            competenceMonth: month,
+            competenceYear: year
+          }
+        }
+      });
+      if (isClosed) {
+        throw new Error(
+          `O período ${String(month).padStart(2, '0')}/${year} já foi encerrado e não permite estorno de pagamentos.`
+        );
       }
 
       const oldPaymentData = JSON.parse(JSON.stringify(payment));
@@ -379,6 +401,7 @@ export async function reversePayment(paymentId: string, reason: string) {
 
     revalidatePath('/dashboard/payments');
     revalidatePath('/dashboard/charges');
+    revalidatePath('/dashboard/portal');
 
     return { success: true };
   } catch (error: any) {

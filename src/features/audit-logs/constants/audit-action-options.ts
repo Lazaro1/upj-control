@@ -16,7 +16,8 @@ export const AUDIT_ACTION_OPTIONS: AuditActionOption[] = [
   { value: 'payment.reversed', label: 'Pagamento estornado' },
   { value: 'cash_transaction.created', label: 'Movimentacao de caixa criada' },
   { value: 'role.permission_changed', label: 'Permissao de papel alterada' },
-  { value: 'period.closed', label: 'Periodo encerrado' }
+  { value: 'period.closed', label: 'Periodo encerrado' },
+  { value: 'period.reopened', label: 'Periodo reaberto' }
 ];
 
 const ACTION_LABEL_MAP = new Map(

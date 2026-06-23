@@ -40,8 +40,8 @@
 | Parte | Descrição               | Status      | Data |
 | ----- | ----------------------- | ----------- | ---- |
 | 4.1   | Notificações por e-mail | ⬜ Pendente | —    |
-| 4.2   | Fechamento mensal       | ⬜ Pendente | —    |
-| 4.3   | Dashboard executivo     | ⬜ Pendente | —    |
+| 4.2   | Fechamento mensal       | ✅ Concluída | 2026-05-27 |
+| 4.3   | Dashboard executivo     | ✅ Concluída | 2026-05-28 |
 | 4.4   | Integrações futuras     | ⬜ Pendente | —    |
 
 ---
@@ -150,3 +150,42 @@
 - [x] Nova área `/dashboard/audit-logs` com filtros por usuário, ação e período
 - [x] API de listagem/detalhe de logs com paginação e isolamento por organização
 - [x] Bloqueio explícito para `org:member` e logs em modo somente leitura
+
+### Parte 4.2 — Fechamento mensal
+
+**Início:** 2026-05-27
+
+- [x] Utilitário central de verificação de período (`period-guard.ts`) com `isPeriodClosed` e `requireOpenPeriod`
+- [x] Server Actions completas: `closePeriod`, `reopenPeriod`, `getPeriodStatus`, `getPeriodSummary`, `listPeriodClosings`
+- [x] Proteção de período fechado em cobranças (criar, atualizar, cancelar)
+- [x] Proteção de período fechado em pagamentos (criar, estornar)
+- [x] Proteção de período fechado em transações de caixa (criar)
+- [x] Página `/dashboard/period-closing` com prévia financeira, encerramento e reabertura
+- [x] Resumo financeiro do período (total cobrado, recebido, saldo, entradas/saídas caixa)
+- [x] Tabela de histórico de fechamentos com paginação
+- [x] Reabertura de período restrita a `org:admin` com confirmação e auditoria
+- [x] Ação de auditoria `period.reopened` registrada
+- [x] Ícone `lock` adicionado ao registro de ícones e navegação
+- [x] Entrada de navegação "Fechamento Mensal" no `nav-config.ts`
+- [x] Build validado (`bun run build` ✅)
+
+### Parte 4.3 — Dashboard executivo
+
+**Início:** 2026-05-28
+
+- [x] Remoção de parallel routes mockadas (`@area_stats`, `@bar_stats`, `@pie_stats`, `@sales`)
+- [x] Remoção de componentes mock antigos (area-graph, bar-graph, pie-graph, recent-sales, overview)
+- [x] Server Actions completas: `getDashboardKPIs`, `getDashboardCharts`, `getDashboardAlerts`, `getTopOverdue`, `getRecentPayments`, `getDashboardPeriodStatus`
+- [x] 6 KPI cards com variação mensal: Receita, Cobrado, Em Atraso, Saldo Caixa, Adimplência, Membros Ativos
+- [x] 3 alertas automáticos: mês anterior não encerrado, inadimplência >30%, saldo negativo
+- [x] Gráfico de área: Evolução Receita x Cobranças (12 meses)
+- [x] Gráfico de barras: Receita por Tipo de Cobrança
+- [x] Gráfico de pizza/donut: Composição por Método de Pagamento
+- [x] Gráfico de barras: Evolução da Inadimplência (12 meses)
+- [x] Tabela Top Inadimplência (top 10 com dias em atraso coloridos)
+- [x] Tabela Últimos Pagamentos (10 mais recentes)
+- [x] Badge informativo "Período Encerrado" quando mês está fechado
+- [x] Saudação personalizada com nome do usuário via Clerk
+- [x] Indicador de competência corrente no subtítulo
+- [x] Layout simplificado (página única, sem parallel routes)
+- [x] Build validado (`bun run build` ✅)

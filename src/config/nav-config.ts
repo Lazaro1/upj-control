@@ -105,6 +105,15 @@ export const navItems: NavItem[] = [
     items: [],
     access: { requireOrg: true, excludeRole: 'org:member' }
   },
+  {
+    title: 'Fechamento Mensal',
+    url: '/dashboard/period-closing',
+    icon: 'lock',
+    isActive: false,
+    shortcut: ['f', 'm'],
+    items: [],
+    access: { requireOrg: true, excludeRole: 'org:member' }
+  },
 
   {
     title: 'Minha Conta',

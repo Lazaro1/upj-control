@@ -2,6 +2,7 @@ import React from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Heading } from '../ui/heading';
 import type { InfobarContent } from '@/components/ui/infobar';
+import { cn } from '@/lib/utils';
 
 function PageSkeleton() {
   return (
@@ -56,7 +57,12 @@ export default function PageContainer({
   const hasHeader = pageTitle || pageHeaderAction;
 
   const inner = (
-    <div className='flex min-w-0 flex-1 flex-col overflow-x-hidden p-4 md:px-6'>
+    <div
+      className={cn(
+        'flex min-w-0 flex-1 flex-col overflow-x-hidden p-4 md:px-6',
+        scrollable && 'pb-8'
+      )}
+    >
       {hasHeader && (
         <div className='bg-background sticky top-0 z-10 mb-4 flex min-w-0 flex-col gap-3 pb-4 sm:flex-row sm:items-start sm:justify-between'>
           <Heading
@@ -74,7 +80,11 @@ export default function PageContainer({
   );
 
   if (scrollable) {
-    return <ScrollArea className='h-[calc(100dvh-52px)]'>{inner}</ScrollArea>;
+    return (
+      <ScrollArea className='h-[calc(100dvh-4rem-env(safe-area-inset-bottom,0px))]'>
+        {inner}
+      </ScrollArea>
+    );
   }
 
   return inner;

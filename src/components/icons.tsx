@@ -13,7 +13,6 @@ import {
   IconLayoutDashboard,
   IconLoader2,
   IconLogin,
-  IconProps,
   IconMoon,
   IconDotsVertical,
   IconPizza,
@@ -38,10 +37,11 @@ import {
   IconWallet,
   IconRepeat,
   IconCash,
-  IconReportAnalytics
+  IconReportAnalytics,
+  IconLock
 } from '@tabler/icons-react';
 
-export type Icon = React.ComponentType<IconProps>;
+export type Icon = React.ComponentType<React.SVGProps<SVGSVGElement>>;
 
 export const Icons = {
   dashboard: IconLayoutDashboard,
@@ -84,5 +84,6 @@ export const Icons = {
   payments: IconWallet,
   repeat: IconRepeat,
   cashRegister: IconCash,
-  reports: IconReportAnalytics
+  reports: IconReportAnalytics,
+  lock: IconLock
 };

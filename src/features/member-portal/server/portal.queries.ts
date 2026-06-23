@@ -1,8 +1,7 @@
-'use server';
-
 import { prisma } from '@/lib/db';
 import { auth } from '@clerk/nextjs/server';
-import { ChargeStatus } from '@prisma/client';
+import { unstable_noStore as noStore } from 'next/cache';
+import { getChargeRemainingAmount } from '@/lib/charge-balance';
 
 export async function getMemberByClerkId() {
   const { userId } = await auth();
@@ -18,7 +17,35 @@ export async function getMemberByClerkId() {
   return member;
 }
 
+function mapPortalCharge(
+  charge: Awaited<
+    ReturnType<
+      typeof prisma.charge.findMany<{
+        include: { chargeType: true; paymentAllocations: true };
+      }>
+    >
+  >[number]
+) {
+  const remainingAmount = getChargeRemainingAmount(charge);
+
+  return {
+    id: charge.id,
+    dueDate: charge.dueDate,
+    description: charge.description,
+    amount: remainingAmount,
+    originalAmount: Number(charge.amount),
+    chargeType: charge.chargeType
+      ? {
+          ...charge.chargeType,
+          defaultAmount: charge.chargeType.defaultAmount?.toNumber() ?? null
+        }
+      : null
+  };
+}
+
 export async function getPortalOverview() {
+  noStore();
+
   const member = await getMemberByClerkId();
 
   if (!member) {
@@ -36,7 +63,8 @@ export async function getPortalOverview() {
         status: { in: ['pendente', 'parcialmente_paga'] }
       },
       include: {
-        chargeType: true
+        chargeType: true,
+        paymentAllocations: true
       },
       orderBy: { dueDate: 'asc' }
     }),
@@ -48,16 +76,17 @@ export async function getPortalOverview() {
     })
   ]);
 
-  const totalDue = charges.reduce(
-    (acc, charge) => acc + charge.amount.toNumber(),
-    0
-  );
+  const openCharges = charges
+    .map(mapPortalCharge)
+    .filter((charge) => charge.amount > 0.01);
 
-  const overdueCharges = charges.filter(
+  const totalDue = openCharges.reduce((acc, charge) => acc + charge.amount, 0);
+
+  const overdueCharges = openCharges.filter(
     (c) => new Date(c.dueDate) < new Date()
   );
-  
-  const upcomingCharges = charges.filter(
+
+  const upcomingCharges = openCharges.filter(
     (c) => new Date(c.dueDate) >= new Date()
   );
 
@@ -71,23 +100,9 @@ export async function getPortalOverview() {
       creditBalance: member.creditBalance.toNumber(),
       totalDue,
       overdueChargesCount: overdueCharges.length,
-      overdueCharges: overdueCharges.map(c => ({
-        ...c,
-        amount: c.amount.toNumber(),
-        chargeType: c.chargeType ? {
-          ...c.chargeType,
-          defaultAmount: c.chargeType.defaultAmount?.toNumber() ?? null
-        } : null
-      })),
-      upcomingCharges: upcomingCharges.map(c => ({
-        ...c,
-        amount: c.amount.toNumber(),
-        chargeType: c.chargeType ? {
-          ...c.chargeType,
-          defaultAmount: c.chargeType.defaultAmount?.toNumber() ?? null
-        } : null
-      })),
-      lastPayments: lastPayments.map(p => ({
+      overdueCharges,
+      upcomingCharges,
+      lastPayments: lastPayments.map((p) => ({
         ...p,
         amount: p.amount.toNumber()
       }))
