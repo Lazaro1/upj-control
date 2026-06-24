@@ -2,9 +2,9 @@
 
 import { prisma } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
-import { auth } from '@clerk/nextjs/server';
 import { format } from 'date-fns';
 import { writeAuditLog } from '@/features/audit-logs/server/audit-log-writer';
+import { requireFinancialWrite } from '@/lib/auth/roles';
 
 export async function getRecurringChargeTypes() {
   const types = await prisma.chargeType.findMany({
@@ -61,10 +61,7 @@ export async function processBulkCharges(data: {
   dueDate: Date;
   description?: string;
 }) {
-  const { userId, orgId } = await auth();
-  if (!userId || !orgId) {
-    return { success: false, error: 'Não autorizado.' };
-  }
+  const { userId, orgId } = await requireFinancialWrite();
 
   // 1. Validar se o período não está fechado (PeriodClosing no futuro)
   const isClosed = await prisma.periodClosing.findUnique({

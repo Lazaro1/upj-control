@@ -8,9 +8,7 @@ import { buttonVariants } from '@/components/ui/button';
 import { IconPlus } from '@tabler/icons-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import { auth } from '@clerk/nextjs/server';
-import { redirect } from 'next/navigation';
-import { resolveDashboardLanding } from '@/lib/auth/landing';
+import { assertFinancialWritePage } from '@/lib/auth/roles';
 
 export const metadata = {
   title: 'Dashboard: Caixa Geral'
@@ -21,12 +19,7 @@ type PageProps = {
 };
 
 export default async function CashTransactionsPage(props: PageProps) {
-  const { userId, orgId, orgRole } = await auth();
-  if (!orgId) redirect('/auth/sign-in');
-  if (orgRole === 'org:member') {
-    const landing = await resolveDashboardLanding({ userId, orgRole });
-    redirect(landing);
-  }
+  await assertFinancialWritePage();
 
   const searchParams = await props.searchParams;
   searchParamsCache.parse(searchParams);

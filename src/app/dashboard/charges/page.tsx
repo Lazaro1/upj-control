@@ -7,8 +7,7 @@ import { buttonVariants } from '@/components/ui/button';
 import { IconPlus } from '@tabler/icons-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import { auth } from '@clerk/nextjs/server';
-import { redirect } from 'next/navigation';
+import { assertFinancialWritePage } from '@/lib/auth/roles';
 
 export const metadata = {
   title: 'Dashboard: Cobranças'
@@ -19,8 +18,7 @@ type PageProps = {
 };
 
 export default async function ChargesPage(props: PageProps) {
-  const { orgId } = await auth();
-  if (!orgId) redirect('/auth/sign-in');
+  await assertFinancialWritePage();
 
   const searchParams = await props.searchParams;
   searchParamsCache.parse(searchParams);

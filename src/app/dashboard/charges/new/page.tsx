@@ -1,16 +1,14 @@
 import PageContainer from '@/components/layout/page-container';
 import { ChargeForm } from '@/features/charges/components/charge-form';
 import { prisma } from '@/lib/db';
-import { auth } from '@clerk/nextjs/server';
-import { redirect } from 'next/navigation';
+import { assertFinancialWritePage } from '@/lib/auth/roles';
 
 export const metadata = {
   title: 'Dashboard: Nova Cobrança'
 };
 
 export default async function NewChargePage() {
-  const { orgId } = await auth();
-  if (!orgId) redirect('/auth/sign-in');
+  await assertFinancialWritePage();
 
   // Load members and charge types to populate the form
   const [members, chargeTypes] = await Promise.all([

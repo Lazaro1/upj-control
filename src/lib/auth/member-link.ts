@@ -1,11 +1,13 @@
 import { clerkClient } from '@clerk/nextjs/server';
 
+import { isStaffRole, STAFF_ROLES } from '@/lib/auth/roles';
 import { prisma } from '@/lib/db';
 
-export const ADMIN_ROLES = ['org:admin', 'org:treasurer', 'org:manager'];
+/** @deprecated Use STAFF_ROLES from @/lib/auth/roles */
+export const ADMIN_ROLES = STAFF_ROLES;
 
 export function isAdminRole(orgRole: string | null | undefined): boolean {
-  return Boolean(orgRole && ADMIN_ROLES.includes(orgRole));
+  return isStaffRole(orgRole);
 }
 
 export function getAdminDashboardPath(): string {

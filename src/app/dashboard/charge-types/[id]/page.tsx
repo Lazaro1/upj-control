@@ -1,8 +1,10 @@
 import { getChargeTypeById } from '@/features/charge-types/server/charge-type.actions';
 import { ChargeTypeForm } from '@/features/charge-types/components/charge-type-form';
+import { assertFinancialWritePage } from '@/lib/auth/roles';
 import { notFound } from 'next/navigation';
 
 export default async function EditChargeTypePage(props: { params: Promise<{ id: string }> }) {
+  await assertFinancialWritePage();
   const params = await props.params;
   const chargeType = await getChargeTypeById(params.id);
 

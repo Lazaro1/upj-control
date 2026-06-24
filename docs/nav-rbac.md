@@ -22,6 +22,18 @@ This document explains the fully client-side RBAC (Role-Based Access Control) sy
 
 **Note**: For actual security (API routes, server actions, page protection), always use server-side checks.
 
+## Matriz de acesso por papel
+
+A matriz completa de capacidades por papel (`org:admin`, `org:treasurer`, `org:manager`, `org:member`) está documentada em [testes-validacoes-tesouraria.md](./testes-validacoes-tesouraria.md#matriz-de-acesso-acordada).
+
+Resumo dos conjuntos usados em `src/lib/auth/roles.ts` e `src/config/nav-config.ts`:
+
+| Conjunto | Papéis | Uso típico |
+| -------- | ------ | ---------- |
+| `STAFF_ROLES` | admin, tesoureiro, diretoria | Dashboard, relatórios, auditoria |
+| `MEMBER_WRITE_ROLES` | admin, tesoureiro, diretoria | Cadastro e gestão de membros |
+| `FINANCIAL_WRITE_ROLES` | admin, tesoureiro | Cobranças, pagamentos, caixa, fechamento |
+
 ## Performance Characteristics
 
 ### All Checks Are Synchronous

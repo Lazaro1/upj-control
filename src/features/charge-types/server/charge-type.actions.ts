@@ -1,6 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/db';
+import { requireFinancialWrite } from '@/lib/auth/roles';
 import { revalidatePath } from 'next/cache';
 import { type Prisma } from '@prisma/client';
 import {
@@ -116,6 +117,8 @@ export async function getChargeTypeById(id: string) {
 }
 
 export async function createChargeType(data: ChargeTypeFormValues) {
+  await requireFinancialWrite();
+
   const parsed = chargeTypeSchema.safeParse(data);
   if (!parsed.success) {
     return { success: false, error: parsed.error.flatten().fieldErrors };
@@ -147,6 +150,8 @@ export async function createChargeType(data: ChargeTypeFormValues) {
 }
 
 export async function updateChargeType(id: string, data: ChargeTypeFormValues) {
+  await requireFinancialWrite();
+
   const parsed = chargeTypeSchema.safeParse(data);
   if (!parsed.success) {
     return { success: false, error: parsed.error.flatten().fieldErrors };
@@ -200,6 +205,8 @@ export async function updateChargeType(id: string, data: ChargeTypeFormValues) {
 }
 
 export async function deleteChargeType(id: string) {
+  await requireFinancialWrite();
+
   await prisma.chargeType.update({
     where: { id },
     data: { active: false }

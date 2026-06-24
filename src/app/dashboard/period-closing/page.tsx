@@ -1,7 +1,5 @@
-import { auth } from '@clerk/nextjs/server';
-import { redirect } from 'next/navigation';
 import PageContainer from '@/components/layout/page-container';
-import { resolveDashboardLanding } from '@/lib/auth/landing';
+import { assertFinancialWritePage } from '@/lib/auth/roles';
 import { PeriodClosingPage } from '@/features/period-closing/components/period-closing-page';
 import { listPeriodClosings } from '@/features/period-closing/server/period-closing.actions';
 
@@ -10,12 +8,7 @@ export const metadata = {
 };
 
 export default async function PeriodClosingRoutePage() {
-  const { userId, orgId, orgRole } = await auth();
-  if (!orgId) redirect('/auth/sign-in');
-  if (orgRole === 'org:member') {
-    const landing = await resolveDashboardLanding({ userId, orgRole });
-    redirect(landing);
-  }
+  const { orgRole } = await assertFinancialWritePage();
 
   const result = await listPeriodClosings(1, 10);
 

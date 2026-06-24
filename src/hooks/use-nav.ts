@@ -19,7 +19,62 @@
 import { useMemo } from 'react';
 import { useOrganization, useUser } from '@clerk/nextjs';
 import { useAuth } from '@clerk/nextjs';
-import type { NavItem } from '@/types';
+import type { NavItem, PermissionCheck } from '@/types';
+
+interface AccessContext {
+  role?: string;
+  hasOrg: boolean;
+  permissions: string[];
+}
+
+function passesAccessCheck(
+  access: PermissionCheck | undefined,
+  accessContext: AccessContext
+): boolean {
+  if (!access) {
+    return true;
+  }
+
+  if (access.role) {
+    if (accessContext.role !== access.role) {
+      return false;
+    }
+  }
+
+  if (access.requireOrg && !accessContext.hasOrg) {
+    return false;
+  }
+
+  if (access.permission) {
+    if (!accessContext.hasOrg) {
+      return false;
+    }
+    if (!accessContext.permissions.includes(access.permission)) {
+      return false;
+    }
+  }
+
+  if (access.roles && access.roles.length > 0) {
+    if (!accessContext.role || !access.roles.includes(accessContext.role)) {
+      return false;
+    }
+  }
+
+  if (access.excludeRole) {
+    if (accessContext.role === access.excludeRole) {
+      return false;
+    }
+  }
+
+  if (access.plan || access.feature) {
+    console.warn(
+      `Plan/feature checks for navigation items require server-side verification. ` +
+        `Item will be shown, but page-level protection should be implemented.`
+    );
+  }
+
+  return true;
+}
 
 /**
  * Hook to filter navigation items based on RBAC (fully client-side)
@@ -57,110 +112,13 @@ export function useFilteredNavItems(items: NavItem[]) {
   // Filter items synchronously (all client-side)
   const filteredItems = useMemo(() => {
     return items
-      .filter((item) => {
-        // No access restrictions
-        if (!item.access) {
-          return true;
-        }
-
-        // Check role
-        if (item.access.role) {
-          if (accessContext.role !== item.access.role) {
-            return false;
-          }
-        }
-
-        // Check requireOrg (after role — portal do irmão não depende de org ativa)
-        if (item.access.requireOrg && !accessContext.hasOrg) {
-          return false;
-        }
-
-        // Check permission
-        if (item.access.permission) {
-          if (!accessContext.hasOrg) {
-            return false;
-          }
-          if (!accessContext.permissions.includes(item.access.permission)) {
-            return false;
-          }
-        }
-
-        // Check excludeRole
-        if (item.access.excludeRole) {
-          if (accessContext.role === item.access.excludeRole) {
-            return false;
-          }
-        }
-
-        // Note: Plans and features require server-side checks with Clerk's has() function
-        // For navigation visibility, you can either:
-        // 1. Store plan/feature info in organization metadata (client-accessible)
-        // 2. Use server actions (current approach)
-        // 3. Skip plan/feature checks for navigation (recommended for performance)
-
-        // For now, if plan/feature is specified, we'll need to handle it differently
-        // Most navigation items won't need plan/feature checks anyway
-        if (item.access.plan || item.access.feature) {
-          // Option: Return true and let the page handle it, or use server action
-          // For now, we'll show it (page-level protection should handle it)
-          console.warn(
-            `Plan/feature checks for navigation items require server-side verification. ` +
-              `Item "${item.title}" will be shown, but page-level protection should be implemented.`
-          );
-        }
-
-        return true;
-      })
+      .filter((item) => passesAccessCheck(item.access, accessContext))
       .map((item) => {
         // Recursively filter child items
         if (item.items && item.items.length > 0) {
-          const filteredChildren = item.items.filter((childItem) => {
-            // No access restrictions
-            if (!childItem.access) {
-              return true;
-            }
-
-            // Check role
-            if (childItem.access.role) {
-              if (accessContext.role !== childItem.access.role) {
-                return false;
-              }
-            }
-
-            // Check requireOrg
-            if (childItem.access.requireOrg && !accessContext.hasOrg) {
-              return false;
-            }
-
-            // Check permission
-            if (childItem.access.permission) {
-              if (!accessContext.hasOrg) {
-                return false;
-              }
-              if (
-                !accessContext.permissions.includes(childItem.access.permission)
-              ) {
-                return false;
-              }
-            }
-
-            // Check excludeRole
-            if (childItem.access.excludeRole) {
-              if (accessContext.role === childItem.access.excludeRole) {
-                return false;
-              }
-            }
-
-            // Plan/feature checks (same warning as above)
-            if (childItem.access.plan || childItem.access.feature) {
-              console.warn(
-                `Plan/feature checks for navigation items require server-side verification. ` +
-                  `Item "${childItem.title}" will be shown, but page-level protection should be implemented.`
-              );
-            }
-
-            return true;
-          });
+          const filteredChildren = item.items.filter((childItem) =>
+            passesAccessCheck(childItem.access, accessContext)
+          );
 
           return {
             ...item,

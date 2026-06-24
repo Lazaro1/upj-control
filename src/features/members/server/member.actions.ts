@@ -8,6 +8,7 @@ import {
   type MemberFormValues
 } from '../schemas/member.schema';
 import { auth } from '@clerk/nextjs/server';
+import { requireMemberWrite } from '@/lib/auth/roles';
 import { writeAuditLog } from '@/features/audit-logs/server/audit-log-writer';
 
 export async function getMembers({
@@ -121,58 +122,79 @@ export async function getMemberById(id: string) {
 }
 
 export async function createMember(data: MemberFormValues) {
-  const parsed = memberFormSchema.safeParse(data);
-  if (!parsed.success) {
-    return { success: false, error: parsed.error.flatten().fieldErrors };
-  }
+  try {
+    await requireMemberWrite();
 
-  const member = await prisma.member.create({
-    data: {
-      fullName: parsed.data.fullName,
-      cim: parsed.data.cim || null,
-      email: parsed.data.email,
-      phone: parsed.data.phone || null,
-      status: parsed.data.status as MemberStatus,
-      joinedAt: parsed.data.joinedAt ? new Date(parsed.data.joinedAt) : null,
-      notesInternal: parsed.data.notesInternal || null
+    const parsed = memberFormSchema.safeParse(data);
+    if (!parsed.success) {
+      return { success: false, error: parsed.error.flatten().fieldErrors };
     }
-  });
 
-  revalidatePath('/dashboard/members');
-  return { success: true, data: member };
+    const member = await prisma.member.create({
+      data: {
+        fullName: parsed.data.fullName,
+        cim: parsed.data.cim || null,
+        email: parsed.data.email,
+        phone: parsed.data.phone || null,
+        status: parsed.data.status as MemberStatus,
+        joinedAt: parsed.data.joinedAt ? new Date(parsed.data.joinedAt) : null,
+        notesInternal: parsed.data.notesInternal || null
+      }
+    });
+
+    revalidatePath('/dashboard/members');
+    return { success: true, data: member };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Acesso negado';
+    return { success: false, error: message };
+  }
 }
 
 export async function updateMember(id: string, data: MemberFormValues) {
-  const parsed = memberFormSchema.safeParse(data);
-  if (!parsed.success) {
-    return { success: false, error: parsed.error.flatten().fieldErrors };
-  }
+  try {
+    await requireMemberWrite();
 
-  const member = await prisma.member.update({
-    where: { id },
-    data: {
-      fullName: parsed.data.fullName,
-      cim: parsed.data.cim || null,
-      email: parsed.data.email,
-      phone: parsed.data.phone || null,
-      status: parsed.data.status as MemberStatus,
-      joinedAt: parsed.data.joinedAt ? new Date(parsed.data.joinedAt) : null,
-      notesInternal: parsed.data.notesInternal || null
+    const parsed = memberFormSchema.safeParse(data);
+    if (!parsed.success) {
+      return { success: false, error: parsed.error.flatten().fieldErrors };
     }
-  });
 
-  revalidatePath('/dashboard/members');
-  return { success: true, data: member };
+    const member = await prisma.member.update({
+      where: { id },
+      data: {
+        fullName: parsed.data.fullName,
+        cim: parsed.data.cim || null,
+        email: parsed.data.email,
+        phone: parsed.data.phone || null,
+        status: parsed.data.status as MemberStatus,
+        joinedAt: parsed.data.joinedAt ? new Date(parsed.data.joinedAt) : null,
+        notesInternal: parsed.data.notesInternal || null
+      }
+    });
+
+    revalidatePath('/dashboard/members');
+    return { success: true, data: member };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Acesso negado';
+    return { success: false, error: message };
+  }
 }
 
 export async function deleteMember(id: string) {
-  await prisma.member.update({
-    where: { id },
-    data: { status: 'inativo' }
-  });
+  try {
+    await requireMemberWrite();
 
-  revalidatePath('/dashboard/members');
-  return { success: true };
+    await prisma.member.update({
+      where: { id },
+      data: { status: 'inativo' }
+    });
+
+    revalidatePath('/dashboard/members');
+    return { success: true };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Acesso negado';
+    return { success: false, error: message };
+  }
 }
 
 export async function logRolePermissionChanged(params: {

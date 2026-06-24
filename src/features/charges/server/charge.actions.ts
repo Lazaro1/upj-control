@@ -9,6 +9,7 @@ import {
 } from '../schemas/charge.schema';
 import { ChargeStatus, Prisma } from '@prisma/client';
 import { writeAuditLog } from '@/features/audit-logs/server/audit-log-writer';
+import { requireFinancialWrite } from '@/lib/auth/roles';
 import { requireOpenPeriod, extractMonthYear } from '@/features/period-closing/server/period-guard';
 
 export async function getCharges(
@@ -154,8 +155,7 @@ export async function getChargeById(id: string) {
 
 export async function createCharge(data: ChargeFormValues) {
   try {
-    const { userId, orgId } = await auth();
-    if (!userId || !orgId) throw new Error('Não autorizado');
+    const { userId, orgId } = await requireFinancialWrite();
 
     const validatedData = chargeFormSchema.parse(data);
 
@@ -199,8 +199,7 @@ export async function updateCharge(
   data: Partial<ChargeFormValues>
 ) {
   try {
-    const { userId, orgId } = await auth();
-    if (!userId || !orgId) throw new Error('Não autorizado');
+    const { userId, orgId } = await requireFinancialWrite();
 
     // First fetch the old state
     const oldCharge = await prisma.charge.findUnique({ where: { id } });
@@ -258,8 +257,7 @@ export async function updateCharge(
 
 export async function cancelCharge(id: string) {
   try {
-    const { userId, orgId } = await auth();
-    if (!userId || !orgId) throw new Error('Não autorizado');
+    const { userId, orgId } = await requireFinancialWrite();
 
     const oldCharge = await prisma.charge.findUnique({ where: { id } });
     if (!oldCharge) throw new Error('Cobrança não encontrada');

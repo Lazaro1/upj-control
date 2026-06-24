@@ -47,10 +47,10 @@ import { usePathname, useRouter } from 'next/navigation';
 import * as React from 'react';
 import { Icons } from '../icons';
 
-const ADMIN_ROLES = new Set(['org:admin', 'org:treasurer', 'org:manager']);
+import { STAFF_ROLES, hasRole } from '@/lib/auth/roles';
 
 function usePortalNavigation(pathname: string, orgRole: string | null | undefined) {
-  const isAdminUser = !!orgRole && ADMIN_ROLES.has(orgRole);
+  const isAdminUser = !!orgRole && hasRole(orgRole, STAFF_ROLES);
   const isPortalContext =
     pathname.startsWith('/dashboard/portal') || orgRole === 'org:member';
   const showPortalHome = isPortalContext && !isAdminUser;

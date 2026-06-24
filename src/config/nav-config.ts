@@ -1,4 +1,9 @@
 import { NavItem } from '@/types';
+import {
+  FINANCIAL_WRITE_ROLES,
+  MEMBER_WRITE_ROLES,
+  STAFF_ROLES
+} from '@/lib/auth/roles';
 
 /**
  * Navigation configuration with RBAC support
@@ -17,8 +22,7 @@ export const navItems: NavItem[] = [
     isActive: false,
     shortcut: ['d', 'd'],
     items: [],
-    // Visível para admin, treasurer e manager (member não vê o dashboard geral)
-    access: { requireOrg: true, excludeRole: 'org:member' }
+    access: { requireOrg: true, roles: [...STAFF_ROLES] }
   },
   {
     title: 'Início',
@@ -36,7 +40,7 @@ export const navItems: NavItem[] = [
     isActive: false,
     shortcut: ['m', 'b'],
     items: [],
-    access: { requireOrg: true, excludeRole: 'org:member' }
+    access: { requireOrg: true, roles: [...MEMBER_WRITE_ROLES] }
   },
   {
     title: 'Tipos de Cobrança',
@@ -45,7 +49,7 @@ export const navItems: NavItem[] = [
     isActive: false,
     shortcut: ['t', 'c'],
     items: [],
-    access: { requireOrg: true, excludeRole: 'org:member' }
+    access: { requireOrg: true, roles: [...FINANCIAL_WRITE_ROLES] }
   },
   {
     title: 'Cobranças',
@@ -67,7 +71,7 @@ export const navItems: NavItem[] = [
         shortcut: ['c', 'r']
       }
     ],
-    access: { requireOrg: true, excludeRole: 'org:member' }
+    access: { requireOrg: true, roles: [...FINANCIAL_WRITE_ROLES] }
   },
   {
     title: 'Pagamentos',
@@ -76,7 +80,7 @@ export const navItems: NavItem[] = [
     isActive: false,
     shortcut: ['p', 'g'],
     items: [],
-    access: { requireOrg: true, excludeRole: 'org:member' }
+    access: { requireOrg: true, roles: [...FINANCIAL_WRITE_ROLES] }
   },
   {
     title: 'Caixa Geral',
@@ -85,7 +89,7 @@ export const navItems: NavItem[] = [
     isActive: false,
     shortcut: ['c', 'x'],
     items: [],
-    access: { requireOrg: true, excludeRole: 'org:member' }
+    access: { requireOrg: true, roles: [...FINANCIAL_WRITE_ROLES] }
   },
   {
     title: 'Relatórios',
@@ -94,7 +98,7 @@ export const navItems: NavItem[] = [
     isActive: false,
     shortcut: ['r', 'l'],
     items: [],
-    access: { requireOrg: true, excludeRole: 'org:member' }
+    access: { requireOrg: true, roles: [...STAFF_ROLES] }
   },
   {
     title: 'Auditoria',
@@ -103,7 +107,7 @@ export const navItems: NavItem[] = [
     isActive: false,
     shortcut: ['a', 'u'],
     items: [],
-    access: { requireOrg: true, excludeRole: 'org:member' }
+    access: { requireOrg: true, roles: [...STAFF_ROLES] }
   },
   {
     title: 'Fechamento Mensal',
@@ -112,7 +116,7 @@ export const navItems: NavItem[] = [
     isActive: false,
     shortcut: ['f', 'm'],
     items: [],
-    access: { requireOrg: true, excludeRole: 'org:member' }
+    access: { requireOrg: true, roles: [...FINANCIAL_WRITE_ROLES] }
   },
 
   {

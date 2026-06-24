@@ -9,6 +9,7 @@ import {
 } from '../schemas/cash-transaction.schema';
 import { Prisma } from '@prisma/client';
 import { writeAuditLog } from '@/features/audit-logs/server/audit-log-writer';
+import { requireFinancialWrite } from '@/lib/auth/roles';
 import { requireOpenPeriod, extractMonthYear } from '@/features/period-closing/server/period-guard';
 
 function parseDateAtBoundary(value: string, boundary: 'start' | 'end'): Date {
@@ -155,9 +156,7 @@ export async function getCashTransactions(
 
 export async function createCashTransaction(data: CashTransactionFormValues) {
   try {
-    const { userId, orgId, orgRole } = await auth();
-    if (!userId || !orgId) throw new Error('Não autorizado');
-    if (orgRole === 'org:member') throw new Error('Acesso negado');
+    const { userId, orgId } = await requireFinancialWrite();
 
     const validatedData = cashTransactionSchema.parse(data);
 

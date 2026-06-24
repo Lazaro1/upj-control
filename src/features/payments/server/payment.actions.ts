@@ -9,6 +9,7 @@ import {
 } from '../schemas/payment.schema';
 import { Prisma } from '@prisma/client';
 import { writeAuditLog } from '@/features/audit-logs/server/audit-log-writer';
+import { requireFinancialWrite } from '@/lib/auth/roles';
 import { normalizeReversePaymentReason } from './reverse-payment-reason';
 import { requireOpenPeriod, extractMonthYear } from '@/features/period-closing/server/period-guard';
 
@@ -181,8 +182,7 @@ export async function getPendingChargesByMember(memberId: string) {
 
 export async function createPayment(data: PaymentFormValues) {
   try {
-    const { userId, orgId } = await auth();
-    if (!userId || !orgId) throw new Error('Não autorizado');
+    const { userId, orgId } = await requireFinancialWrite();
 
     const validatedData = paymentSchema.parse(data);
 
@@ -312,8 +312,7 @@ export async function createPayment(data: PaymentFormValues) {
 
 export async function reversePayment(paymentId: string, reason: string) {
   try {
-    const { userId, orgId } = await auth();
-    if (!userId || !orgId) throw new Error('Nao autorizado');
+    const { userId, orgId } = await requireFinancialWrite();
     const normalizedReason = normalizeReversePaymentReason(reason);
 
     await prisma.$transaction(async (tx) => {

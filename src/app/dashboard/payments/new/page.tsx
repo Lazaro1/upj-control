@@ -1,16 +1,14 @@
 import PageContainer from '@/components/layout/page-container';
 import { PaymentForm } from '@/features/payments/components/payment-form';
 import { prisma } from '@/lib/db';
-import { auth } from '@clerk/nextjs/server';
-import { redirect } from 'next/navigation';
+import { assertFinancialWritePage } from '@/lib/auth/roles';
 
 export const metadata = {
   title: 'Dashboard: Registrar Novo Pagamento'
 };
 
 export default async function NewPaymentPage() {
-  const { orgId } = await auth();
-  if (!orgId) redirect('/auth/sign-in');
+  await assertFinancialWritePage();
 
   // Load ONLY members who have at least one pending or partially paid charge
   const membersWithDebts = await prisma.member.findMany({

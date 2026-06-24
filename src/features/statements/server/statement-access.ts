@@ -1,7 +1,6 @@
 import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/db';
-
-const ADMIN_ROLES = new Set(['org:admin', 'org:treasurer', 'org:manager']);
+import { hasRole, STAFF_ROLES } from '@/lib/auth/roles';
 
 export async function assertMemberStatementAccess(memberId: string) {
   const { userId, orgId, orgRole } = await auth();
@@ -10,7 +9,7 @@ export async function assertMemberStatementAccess(memberId: string) {
     throw new Error('Não autorizado');
   }
 
-  if (orgId && orgRole && ADMIN_ROLES.has(orgRole)) {
+  if (orgId && hasRole(orgRole, STAFF_ROLES)) {
     return { userId, orgRole, isSelf: false };
   }
 

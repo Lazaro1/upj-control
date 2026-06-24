@@ -1,6 +1,6 @@
 import PageContainer from '@/components/layout/page-container';
 import { prisma } from '@/lib/db';
-import { notFound, redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import {
   Card,
   CardHeader,
@@ -11,7 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { IconArrowLeft, IconPrinter } from '@tabler/icons-react';
-import { auth } from '@clerk/nextjs/server';
+import { assertFinancialWritePage } from '@/lib/auth/roles';
 import { ReversePaymentButton } from '@/features/payments/components/reverse-payment-button';
 
 export default async function PaymentReceiptPage({
@@ -19,8 +19,7 @@ export default async function PaymentReceiptPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { orgId } = await auth();
-  if (!orgId) redirect('/auth/sign-in');
+  await assertFinancialWritePage();
 
   const { id } = await params;
 

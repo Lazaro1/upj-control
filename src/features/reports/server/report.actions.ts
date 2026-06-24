@@ -1,7 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/db';
-import { auth } from '@clerk/nextjs/server';
+import { requireStaffAuth } from '@/lib/auth/roles';
 import { Prisma } from '@prisma/client';
 
 function buildDateFilter(
@@ -28,17 +28,7 @@ function buildDateFilter(
 }
 
 async function assertReportAccess() {
-  const { userId, orgId, orgRole } = await auth();
-
-  if (!userId || !orgId) {
-    throw new Error('Não autorizado');
-  }
-
-  if (orgRole === 'org:member') {
-    throw new Error('Acesso negado');
-  }
-
-  return { userId, orgId };
+  return requireStaffAuth();
 }
 
 export async function getIncomeReport(dateFrom?: string, dateTo?: string) {
@@ -427,18 +417,7 @@ function calcDaysOverdue(dueDate: Date, todayRef: Date): number {
 }
 
 async function assertDelinquencyAccess() {
-  const { userId, orgId, orgRole } = await auth();
-
-  if (!userId || !orgId) {
-    throw new Error('Nao autorizado');
-  }
-
-  const allowedRoles = new Set(['org:treasurer', 'org:manager', 'org:admin']);
-  if (!orgRole || !allowedRoles.has(orgRole)) {
-    throw new Error('Acesso negado');
-  }
-
-  return { userId, orgId, orgRole };
+  return requireStaffAuth();
 }
 
 export async function getDelinquencyChargeTypeOptions() {

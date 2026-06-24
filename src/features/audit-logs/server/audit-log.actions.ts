@@ -1,21 +1,15 @@
 'use server';
 
-import { auth } from '@clerk/nextjs/server';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
+import { requireStaffAuth } from '@/lib/auth/roles';
 import {
   auditLogFilterSchema,
   type AuditLogFilters
 } from '../schemas/audit-log-filter.schema';
 
 async function assertAuditAccess() {
-  const { orgId, orgRole } = await auth();
-  const allowedRoles = new Set(['org:treasurer', 'org:manager', 'org:admin']);
-
-  if (!orgId) throw new Error('Nao autorizado');
-  if (!orgRole || !allowedRoles.has(orgRole)) throw new Error('Acesso negado');
-
-  return { orgId, orgRole };
+  return requireStaffAuth();
 }
 
 function parseDateStart(value: string): Date {

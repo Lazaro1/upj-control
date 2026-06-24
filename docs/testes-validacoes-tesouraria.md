@@ -32,6 +32,42 @@
 
 **Objetivo:** garantir que apenas `org:admin`, `org:treasurer`, `org:manager` e `org:member` sejam usados como papéis técnicos.
 
+#### Matriz de acesso acordada
+
+Mapeamento de negócio → papel técnico no Clerk:
+
+| Nome de negócio | Papel (Clerk)   |
+| --------------- | --------------- |
+| Admin           | `org:admin`     |
+| Tesoureiro      | `org:treasurer` |
+| Diretoria       | `org:manager`   |
+| Irmão           | `org:member`    |
+
+**Menus visíveis para `org:manager` (diretoria):** Dashboard, Membros, Relatórios, Auditoria, Meu Perfil.
+
+**Menus bloqueados para `org:manager`:** Tipos de Cobrança, Cobranças, Pagamentos, Caixa Geral, Fechamento Mensal, Portal do Irmão.
+
+| Capacidade | `org:admin` | `org:treasurer` | `org:manager` | `org:member` |
+| ---------- | ----------- | --------------- | ------------- | ------------ |
+| Dashboard | sim | sim | sim | não |
+| Membros (criar/editar/inativar/`notes_internal`) | sim | sim | sim | não |
+| Extrato de membro | sim | sim | sim | só o próprio |
+| Relatórios + exportação | sim | sim | sim | não |
+| Auditoria (leitura) | sim | sim | sim | não |
+| Tipos de cobrança | sim | sim | não | não |
+| Cobranças / recorrentes | sim | sim | não | não |
+| Pagamentos / estornos | sim | sim | não | não |
+| Caixa geral | sim | sim | não | não |
+| Fechar período | sim | sim | não | não |
+| Reabrir período | sim | não | não | não |
+
+Implementação de referência:
+
+- Papéis e helpers: `src/lib/auth/roles.ts` (`STAFF_ROLES`, `FINANCIAL_WRITE_ROLES`, `MEMBER_WRITE_ROLES`)
+- Menus: `src/config/nav-config.ts`
+- Proteção de páginas operacionais: `assertFinancialWritePage()` nas rotas financeiras
+- Server actions: `requireFinancialWrite()` (mutações financeiras), `requireMemberWrite()` (membros)
+
 **Checklist:**
 
 - Confirmar ausência de verificações de papel não canônicas no backend
@@ -41,9 +77,12 @@
 **Cenários mínimos:**
 
 - `org:member` acessa somente o próprio portal
-- `org:manager` visualiza relatórios, mas não cria/edita lançamentos
+- `org:manager` visualiza dashboard, relatórios e auditoria, gerencia membros (criar/editar/inativar), mas não acessa menus operacionais financeiros
+- `org:manager` recebe `403` ao acessar URL direta de cobranças, pagamentos, caixa ou fechamento mensal
+- `org:manager` consegue criar, editar e inativar membros (incluindo `notes_internal`)
+- `org:manager` não consegue executar `createPayment`, `createCharge` ou `closePeriod` via server actions
 - `org:treasurer` cria cobranças e registra pagamentos
-- `org:admin` acessa todas as áreas administrativas
+- `org:admin` acessa todas as áreas administrativas, incluindo reabertura de período encerrado
 
 ---
 

@@ -1,8 +1,8 @@
 import PageContainer from '@/components/layout/page-container';
 import { ChargeForm } from '@/features/charges/components/charge-form';
 import { prisma } from '@/lib/db';
-import { auth } from '@clerk/nextjs/server';
-import { notFound, redirect } from 'next/navigation';
+import { assertFinancialWritePage } from '@/lib/auth/roles';
+import { notFound } from 'next/navigation';
 import { getChargeById } from '@/features/charges/server/charge.actions';
 
 export const metadata = {
@@ -14,8 +14,7 @@ export default async function EditChargePage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { orgId } = await auth();
-  if (!orgId) redirect('/auth/sign-in');
+  await assertFinancialWritePage();
 
   const { id } = await params;
 

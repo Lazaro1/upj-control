@@ -2,6 +2,7 @@
 
 import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/db';
+import { ORG_ROLES, requireFinancialWrite } from '@/lib/auth/roles';
 import { writeAuditLog } from '@/features/audit-logs/server/audit-log-writer';
 import { revalidatePath } from 'next/cache';
 
@@ -158,10 +159,7 @@ export async function closePeriod(data: {
   notes?: string;
 }): Promise<{ success: boolean; data?: PeriodClosingListItem; error?: string }> {
   try {
-    const { userId, orgId, orgRole } = await auth();
-    if (!userId || !orgId) return { success: false, error: 'Não autorizado' };
-    if (orgRole === 'org:member')
-      return { success: false, error: 'Acesso negado.' };
+    const { userId, orgId } = await requireFinancialWrite();
 
     // Verificar se já está fechado
     const existing = await prisma.periodClosing.findUnique({
@@ -262,7 +260,7 @@ export async function reopenPeriod(data: {
   try {
     const { userId, orgId, orgRole } = await auth();
     if (!userId || !orgId) return { success: false, error: 'Não autorizado' };
-    if (orgRole !== 'org:admin')
+    if (orgRole !== ORG_ROLES.ADMIN)
       return {
         success: false,
         error: 'Apenas administradores podem reabrir períodos encerrados.'

@@ -1,28 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { getAuditLogs } from '@/features/audit-logs/server/audit-log.actions';
-
-function assertAccess(
-  orgId: string | null | undefined,
-  orgRole: string | null | undefined
-) {
-  const allowedRoles = new Set(['org:treasurer', 'org:manager', 'org:admin']);
-
-  if (!orgId) {
-    return new NextResponse('Nao autorizado', { status: 401 });
-  }
-
-  if (!orgRole || !allowedRoles.has(orgRole)) {
-    return new NextResponse('Acesso negado', { status: 403 });
-  }
-
-  return null;
-}
+import { denyStaffApiAccess } from '@/lib/auth/api-access';
 
 export async function GET(req: NextRequest) {
   try {
     const { orgId, orgRole } = await auth();
-    const denied = assertAccess(orgId, orgRole);
+    const denied = denyStaffApiAccess(orgId, orgRole);
     if (denied) return denied;
 
     const { searchParams } = new URL(req.url);

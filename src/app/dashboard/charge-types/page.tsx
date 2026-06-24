@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { IconPlus } from '@tabler/icons-react';
 import type { SearchParams } from 'nuqs/server';
+import { assertFinancialWritePage } from '@/lib/auth/roles';
 
 export const metadata = {
   title: 'Tipos de Cobrança — UPJ Control'
@@ -17,6 +18,7 @@ type ChargeTypesPageProps = {
 };
 
 export default async function ChargeTypesPage(props: ChargeTypesPageProps) {
+  await assertFinancialWritePage();
   const searchParams = await props.searchParams;
   const params = searchParamsCache.parse(searchParams);
 

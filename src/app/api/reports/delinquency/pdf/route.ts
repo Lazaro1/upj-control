@@ -1,19 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { generateDelinquencyReportPDF } from '@/features/reports/server/pdf-service';
+import { denyStaffApiAccess } from '@/lib/auth/api-access';
 import { prisma } from '@/lib/db';
 
 export async function GET(req: NextRequest) {
   try {
     const { orgId, orgRole, userId } = await auth();
-    const allowedRoles = new Set(['org:treasurer', 'org:manager', 'org:admin']);
-
+    const denied = denyStaffApiAccess(orgId, orgRole);
+    if (denied) return denied;
     if (!orgId) {
-      return new NextResponse('Nao autorizado', { status: 401 });
-    }
-
-    if (!orgRole || !allowedRoles.has(orgRole)) {
-      return new NextResponse('Acesso negado', { status: 403 });
+      return new NextResponse('Não autorizado', { status: 401 });
     }
 
     const { searchParams } = new URL(req.url);

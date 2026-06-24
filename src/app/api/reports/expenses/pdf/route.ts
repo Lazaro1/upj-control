@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { generateExpenseReportPDF } from '@/features/reports/server/pdf-service';
+import { denyStaffApiAccess } from '@/lib/auth/api-access';
 
 export async function GET(req: NextRequest) {
   try {
     const { orgId, orgRole } = await auth();
-    if (!orgId || orgRole === 'org:member') {
-      return new NextResponse('Não autorizado', { status: 401 });
-    }
+    const denied = denyStaffApiAccess(orgId, orgRole);
+    if (denied) return denied;
 
     const { searchParams } = new URL(req.url);
     const dateFrom = searchParams.get('dateFrom') || undefined;
