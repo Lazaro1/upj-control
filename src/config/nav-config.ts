@@ -21,13 +21,13 @@ export const navItems: NavItem[] = [
     access: { requireOrg: true, excludeRole: 'org:member' }
   },
   {
-    title: 'Meu Portal',
+    title: 'Início',
     url: '/dashboard/portal',
-    icon: 'profile',
+    icon: 'dashboard',
     isActive: false,
     shortcut: ['p', 'r'],
     items: [],
-    access: { requireOrg: true, role: 'org:member' }
+    access: { role: 'org:member' }
   },
   {
     title: 'Membros',
@@ -51,7 +51,7 @@ export const navItems: NavItem[] = [
     title: 'Cobranças',
     url: '#',
     icon: 'charges',
-    isActive: true,
+    isActive: false,
     shortcut: ['c', 'b'],
     items: [
       {
@@ -96,12 +96,30 @@ export const navItems: NavItem[] = [
     items: [],
     access: { requireOrg: true, excludeRole: 'org:member' }
   },
+  {
+    title: 'Auditoria',
+    url: '/dashboard/audit-logs',
+    icon: 'reports',
+    isActive: false,
+    shortcut: ['a', 'u'],
+    items: [],
+    access: { requireOrg: true, excludeRole: 'org:member' }
+  },
+  {
+    title: 'Fechamento Mensal',
+    url: '/dashboard/period-closing',
+    icon: 'lock',
+    isActive: false,
+    shortcut: ['f', 'm'],
+    items: [],
+    access: { requireOrg: true, excludeRole: 'org:member' }
+  },
 
   {
     title: 'Minha Conta',
     url: '#',
     icon: 'account',
-    isActive: true,
+    isActive: false,
     items: [
       {
         title: 'Meu Perfil',

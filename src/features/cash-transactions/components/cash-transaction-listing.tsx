@@ -10,6 +10,7 @@ export async function CashTransactionListing() {
   const category = searchParamsCache.get('category');
   const dateFrom = searchParamsCache.get('dateFrom');
   const dateTo = searchParamsCache.get('dateTo');
+  const sort = searchParamsCache.get('sort');
 
   const result = await getCashTransactions(
     page || 1,
@@ -18,7 +19,8 @@ export async function CashTransactionListing() {
     type || undefined,
     category || undefined,
     dateFrom || undefined,
-    dateTo || undefined
+    dateTo || undefined,
+    sort || undefined
   );
 
   const data = result.success && result.data ? result.data : [];

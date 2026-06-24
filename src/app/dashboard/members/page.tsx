@@ -22,6 +22,7 @@ export default async function MembersPage({ searchParams }: MembersPageProps) {
   const { members, total, pageCount } = await getMembers({
     page: params.page,
     perPage: params.perPage,
+    sort: params.sort ?? undefined,
     fullName: params.fullName ?? undefined,
     email: params.email ?? undefined,
     phone: params.phone ?? undefined,
@@ -30,23 +31,21 @@ export default async function MembersPage({ searchParams }: MembersPageProps) {
 
   return (
     <div className='flex flex-1 flex-col gap-4 p-4 pt-0'>
-      <div className='flex items-start justify-between'>
-        <Heading
-          title={`Membros (${total})`}
-          description='Gerencie os irmãos cadastrados na loja.'
-        />
-        <Link href='/dashboard/members/new'>
-          <Button>
+      <div className='flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between'>
+        <div className='min-w-0 flex-1'>
+          <Heading
+            title='Membros'
+            description='Gerencie os irmãos cadastrados na loja.'
+          />
+        </div>
+        <Link href='/dashboard/members/new' className='w-full sm:w-auto'>
+          <Button className='w-full sm:w-auto'>
             <IconPlus className='mr-2 h-4 w-4' /> Novo Membro
           </Button>
         </Link>
       </div>
       <Separator />
-      <MemberListing
-        data={members}
-        totalItems={total}
-        pageCount={pageCount}
-      />
+      <MemberListing data={members} totalItems={total} pageCount={pageCount} />
     </div>
   );
 }

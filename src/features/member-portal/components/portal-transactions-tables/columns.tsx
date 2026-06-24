@@ -1,11 +1,11 @@
 'use client';
 
 import { type ColumnDef } from '@tanstack/react-table';
-import { Badge } from '@/components/ui/badge';
 import { DataTableColumnHeader } from '@/components/ui/table/data-table-column-header';
 import { format } from 'date-fns';
 import { formatCurrency } from '@/lib/utils';
 import { ptBR } from 'date-fns/locale';
+import { TransactionStatusBadge } from './transaction-status-badge';
 
 export type PortalTransaction = {
   id: string;
@@ -13,30 +13,21 @@ export type PortalTransaction = {
   chargeType: {
     id: string;
     name: string;
-  };
+  } | null;
   competenceDate: string;
   dueDate: string;
   description: string | null;
   amount: number;
+  originalAmount: number;
+  remainingAmount: number;
+  effectiveStatus: string;
   status: string;
   createdAt: string;
-  paymentAllocations: any[]; // Pagamentos associados
-};
-
-const statusVariant: Record<string, string> = {
-  pendente: 'warning',
-  parcialmente_paga: 'secondary',
-  paga: 'default',
-  cancelada: 'destructive',
-  estornada: 'destructive'
-};
-
-const statusLabels: Record<string, string> = {
-  pendente: 'Pendente',
-  parcialmente_paga: 'Pago Parcialmente',
-  paga: 'Pago',
-  cancelada: 'Cancelado',
-  estornada: 'Estornado'
+  paymentAllocations: {
+    id: string;
+    allocatedAmount: number;
+    payment?: { paymentDate: string; paymentMethod: string | null } | null;
+  }[];
 };
 
 export const columns: ColumnDef<PortalTransaction>[] = [
@@ -46,13 +37,17 @@ export const columns: ColumnDef<PortalTransaction>[] = [
       <DataTableColumnHeader column={column} title='Tipo de Cobrança' />
     ),
     cell: ({ row }) => (
-      <div className="flex flex-col">
-        <span className="font-medium">{row.original.chargeType?.name || 'Cobrança Avulsa'}</span>
+      <div className='flex flex-col'>
+        <span className='font-medium'>
+          {row.original.chargeType?.name || 'Cobrança Avulsa'}
+        </span>
         {row.original.description && (
-          <span className="text-xs text-muted-foreground">{row.original.description}</span>
+          <span className='text-xs text-muted-foreground'>
+            {row.original.description}
+          </span>
         )}
       </div>
-    ),
+    )
   },
   {
     accessorKey: 'competenceDate',
@@ -61,7 +56,11 @@ export const columns: ColumnDef<PortalTransaction>[] = [
     ),
     cell: ({ row }) => {
       const date = new Date(row.original.competenceDate);
-      return <span className="capitalize">{format(date, 'MMM/yyyy', { locale: ptBR })}</span>;
+      return (
+        <span className='capitalize'>
+          {format(date, 'MMM/yyyy', { locale: ptBR })}
+        </span>
+      );
     }
   },
   {
@@ -69,46 +68,38 @@ export const columns: ColumnDef<PortalTransaction>[] = [
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Vencimento' />
     ),
-    cell: ({ row }) => {
-      const date = new Date(row.original.dueDate);
-      return format(date, 'dd/MM/yyyy');
-    }
+    cell: ({ row }) => format(new Date(row.original.dueDate), 'dd/MM/yyyy')
   },
   {
-    accessorKey: 'amount',
+    id: 'amount',
+    accessorKey: 'remainingAmount',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Valor Cobrado' />
+      <DataTableColumnHeader column={column} title='Valor' />
     ),
     cell: ({ row }) => {
-      return <div className="font-semibold">{formatCurrency(row.original.amount)}</div>;
+      const { remainingAmount, originalAmount, status } = row.original;
+      const isOpen = status === 'pendente' || status === 'parcialmente_paga';
+
+      if (isOpen && remainingAmount > 0.01) {
+        return (
+          <div className='font-semibold'>
+            {formatCurrency(remainingAmount)}
+            {originalAmount > remainingAmount + 0.01 && (
+              <p className='text-xs font-normal text-muted-foreground'>
+                de {formatCurrency(originalAmount)}
+              </p>
+            )}
+          </div>
+        );
+      }
+
+      return <div className='font-semibold'>{formatCurrency(originalAmount)}</div>;
     }
   },
   {
     id: 'status',
-    accessorKey: 'status',
+    accessorKey: 'effectiveStatus',
     header: 'Situação',
-    cell: ({ row }) => {
-      const status = row.original.status;
-      const isOverdue = status === 'pendente' && new Date(row.original.dueDate) < new Date();
-      
-      return (
-        <Badge 
-          variant={isOverdue ? 'destructive' : (statusVariant[status] as any) ?? 'outline'} 
-        >
-          {isOverdue ? 'Vencido' : statusLabels[status]}
-        </Badge>
-      );
-    },
-    enableColumnFilter: true,
-    meta: {
-      label: 'Status',
-      variant: 'multiSelect',
-      options: [
-        { label: 'Pendente', value: 'pendente' },
-        { label: 'Paga', value: 'paga' },
-        { label: 'Pago Parcialmente', value: 'parcialmente_paga' },
-        { label: 'Cancelada', value: 'cancelada' }
-      ]
-    }
+    cell: ({ row }) => <TransactionStatusBadge transaction={row.original} />
   }
 ];

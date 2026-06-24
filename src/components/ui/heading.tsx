@@ -3,8 +3,8 @@ import { InfoButton } from '@/components/ui/info-button';
 import type { InfobarContent } from '@/components/ui/infobar';
 
 interface HeadingProps {
-  title: string;
-  description: string;
+  title: React.ReactNode;
+  description: React.ReactNode;
   infoContent?: InfobarContent;
 }
 

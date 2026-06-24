@@ -20,6 +20,7 @@ export type CashTransactionSerializable = {
 
 export const columns: ColumnDef<CashTransactionSerializable>[] = [
   {
+    id: 'transactionDate',
     accessorKey: 'transactionDate',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Data' />
@@ -34,11 +35,16 @@ export const columns: ColumnDef<CashTransactionSerializable>[] = [
   {
     id: 'type',
     accessorKey: 'type',
-    header: 'Tipo',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Tipo' />
+    ),
     cell: ({ row }) => {
       const type = row.original.type;
       return (
-        <Badge variant={type === 'saida' ? 'destructive' : 'default'} className="capitalize">
+        <Badge
+          variant={type === 'saida' ? 'destructive' : 'default'}
+          className='capitalize'
+        >
           {type === 'saida' ? 'Saída' : 'Entrada'}
         </Badge>
       );
@@ -54,11 +60,16 @@ export const columns: ColumnDef<CashTransactionSerializable>[] = [
     }
   },
   {
+    id: 'category',
     accessorKey: 'category',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Categoria' />
     ),
-    cell: ({ row }) => <span>{row.original.category}</span>,
+    cell: ({ row }) => (
+      <span className='block max-w-[140px] truncate'>
+        {row.original.category}
+      </span>
+    ),
     enableColumnFilter: true,
     meta: {
       label: 'Categoria',
@@ -66,17 +77,24 @@ export const columns: ColumnDef<CashTransactionSerializable>[] = [
     }
   },
   {
+    id: 'description',
     accessorKey: 'description',
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title='Descrição' />
+      <div className='hidden lg:block'>
+        <DataTableColumnHeader column={column} title='Descrição' />
+      </div>
     ),
     cell: ({ row }) => (
-      <span className="truncate max-w-[200px] block" title={row.original.description || ''}>
+      <span
+        className='hidden max-w-[220px] truncate lg:block'
+        title={row.original.description || ''}
+      >
         {row.original.description || '-'}
       </span>
-    ),
+    )
   },
   {
+    id: 'amount',
     accessorKey: 'amount',
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title='Valor' />
@@ -85,13 +103,17 @@ export const columns: ColumnDef<CashTransactionSerializable>[] = [
       const amount = parseFloat(row.original.amount.toString());
       const formatted = new Intl.NumberFormat('pt-BR', {
         style: 'currency',
-        currency: 'BRL',
+        currency: 'BRL'
       }).format(amount);
-      return <div className="font-semibold">{formatted}</div>;
+      return <div className='font-semibold'>{formatted}</div>;
     }
   },
   {
     id: 'actions',
-    cell: ({ row }) => <CellAction transaction={row.original} />
+    cell: ({ row }) => (
+      <div className='flex justify-end'>
+        <CellAction transaction={row.original} />
+      </div>
+    )
   }
 ];

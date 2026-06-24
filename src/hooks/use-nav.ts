@@ -18,6 +18,7 @@
 
 import { useMemo } from 'react';
 import { useOrganization, useUser } from '@clerk/nextjs';
+import { useAuth } from '@clerk/nextjs';
 import type { NavItem } from '@/types';
 
 /**
@@ -29,20 +30,29 @@ import type { NavItem } from '@/types';
 export function useFilteredNavItems(items: NavItem[]) {
   const { organization, membership } = useOrganization();
   const { user } = useUser();
+  const { orgId, orgRole } = useAuth();
 
   // Memoize context and permissions
   const accessContext = useMemo(() => {
     const permissions = membership?.permissions || [];
-    const role = membership?.role;
+    const role = membership?.role || orgRole;
+    const hasOrg = !!organization || !!membership || !!orgId;
 
     return {
       organization: organization ?? undefined,
       user: user ?? undefined,
       permissions: permissions as string[],
       role: role ?? undefined,
-      hasOrg: !!organization
+      hasOrg
     };
-  }, [organization?.id, user?.id, membership?.permissions, membership?.role]);
+  }, [
+    organization?.id,
+    user?.id,
+    membership?.permissions,
+    membership?.role,
+    orgId,
+    orgRole
+  ]);
 
   // Filter items synchronously (all client-side)
   const filteredItems = useMemo(() => {
@@ -53,7 +63,14 @@ export function useFilteredNavItems(items: NavItem[]) {
           return true;
         }
 
-        // Check requireOrg
+        // Check role
+        if (item.access.role) {
+          if (accessContext.role !== item.access.role) {
+            return false;
+          }
+        }
+
+        // Check requireOrg (after role — portal do irmão não depende de org ativa)
         if (item.access.requireOrg && !accessContext.hasOrg) {
           return false;
         }
@@ -64,16 +81,6 @@ export function useFilteredNavItems(items: NavItem[]) {
             return false;
           }
           if (!accessContext.permissions.includes(item.access.permission)) {
-            return false;
-          }
-        }
-
-        // Check role
-        if (item.access.role) {
-          if (!accessContext.hasOrg) {
-            return false;
-          }
-          if (accessContext.role !== item.access.role) {
             return false;
           }
         }
@@ -113,6 +120,13 @@ export function useFilteredNavItems(items: NavItem[]) {
               return true;
             }
 
+            // Check role
+            if (childItem.access.role) {
+              if (accessContext.role !== childItem.access.role) {
+                return false;
+              }
+            }
+
             // Check requireOrg
             if (childItem.access.requireOrg && !accessContext.hasOrg) {
               return false;
@@ -126,16 +140,6 @@ export function useFilteredNavItems(items: NavItem[]) {
               if (
                 !accessContext.permissions.includes(childItem.access.permission)
               ) {
-                return false;
-              }
-            }
-
-            // Check role
-            if (childItem.access.role) {
-              if (!accessContext.hasOrg) {
-                return false;
-              }
-              if (accessContext.role !== childItem.access.role) {
                 return false;
               }
             }

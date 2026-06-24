@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
+import { type Prisma } from '@prisma/client';
 import {
   chargeTypeSchema,
   type ChargeTypeFormValues
@@ -10,11 +11,13 @@ import {
 export async function getChargeTypes({
   page = 1,
   perPage = 10,
+  sort,
   search,
   active
 }: {
   page?: number;
   perPage?: number;
+  sort?: string;
   search?: string;
   active?: boolean;
 }) {
@@ -27,12 +30,57 @@ export async function getChargeTypes({
     where.active = active;
   }
 
+  const sortableFields = [
+    'name',
+    'description',
+    'defaultAmount',
+    'isRecurring',
+    'active',
+    'createdAt'
+  ] as const;
+  type ChargeTypeSortableField = (typeof sortableFields)[number];
+
+  const isSortableField = (value: string): value is ChargeTypeSortableField =>
+    sortableFields.includes(value as ChargeTypeSortableField);
+
+  let orderBy:
+    | Prisma.ChargeTypeOrderByWithRelationInput
+    | Prisma.ChargeTypeOrderByWithRelationInput[] = { createdAt: 'desc' };
+
+  if (sort) {
+    try {
+      const parsed = JSON.parse(sort);
+      if (!Array.isArray(parsed)) {
+        throw new Error('Invalid sort format');
+      }
+
+      const primarySort = (
+        parsed as Array<{ id?: string; desc?: boolean }>
+      ).find((item) => (item.id ? isSortableField(item.id) : false));
+
+      if (primarySort?.id && isSortableField(primarySort.id)) {
+        const direction: 'asc' | 'desc' = primarySort.desc ? 'desc' : 'asc';
+        orderBy =
+          primarySort.id === 'createdAt'
+            ? { createdAt: direction }
+            : [
+                {
+                  [primarySort.id]: direction
+                } as Prisma.ChargeTypeOrderByWithRelationInput,
+                { createdAt: 'desc' }
+              ];
+      }
+    } catch {
+      orderBy = { createdAt: 'desc' };
+    }
+  }
+
   const [chargeTypes, total] = await Promise.all([
     prisma.chargeType.findMany({
       where,
       skip: (page - 1) * perPage,
       take: perPage,
-      orderBy: { createdAt: 'desc' }
+      orderBy
     }),
     prisma.chargeType.count({ where })
   ]);

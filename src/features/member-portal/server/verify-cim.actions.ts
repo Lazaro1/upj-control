@@ -1,13 +1,19 @@
 'use server';
 
+import { findLinkedMember } from '@/lib/auth/member-link';
 import { prisma } from '@/lib/db';
 import { auth, currentUser } from '@clerk/nextjs/server';
-import { redirect } from 'next/navigation';
 
 export async function verifyCim(cim: string) {
   const { userId } = await auth();
   if (!userId) {
     return { success: false, error: 'Usuário não autenticado.' };
+  }
+
+  const alreadyLinked = await findLinkedMember(userId);
+
+  if (alreadyLinked) {
+    return { success: true };
   }
 
   // Buscar o email do Clerk

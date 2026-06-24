@@ -9,12 +9,16 @@ export const metadata = {
   title: 'Dashboard: Editar Cobrança'
 };
 
-export default async function EditChargePage({ params }: { params: Promise<{ id: string }> }) {
+export default async function EditChargePage({
+  params
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { orgId } = await auth();
-  if (!orgId) redirect('/dashboard/workspaces');
+  if (!orgId) redirect('/auth/sign-in');
 
   const { id } = await params;
-  
+
   const [chargeRes, members, chargeTypes] = await Promise.all([
     getChargeById(id),
     prisma.member.findMany({
@@ -31,17 +35,17 @@ export default async function EditChargePage({ params }: { params: Promise<{ id:
     notFound();
   }
 
-  const formattedChargeTypes = chargeTypes.map(c => ({
+  const formattedChargeTypes = chargeTypes.map((c) => ({
     ...c,
     defaultAmount: c.defaultAmount ? Number(c.defaultAmount) : null
   }));
 
   return (
     <PageContainer scrollable={true}>
-      <ChargeForm 
-        initialData={chargeRes.data} 
-        members={members} 
-        chargeTypes={formattedChargeTypes} 
+      <ChargeForm
+        initialData={chargeRes.data}
+        members={members}
+        chargeTypes={formattedChargeTypes}
       />
     </PageContainer>
   );

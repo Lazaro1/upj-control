@@ -9,6 +9,7 @@ import {
 export const searchParams = {
   page: parseAsInteger.withDefault(1),
   perPage: parseAsInteger.withDefault(10),
+  sort: parseAsString,
   name: parseAsString,
   fullName: parseAsString,
   email: parseAsString,
@@ -29,4 +30,3 @@ export const searchParamsCache = createSearchParamsCache(searchParams);
 export const serialize = createSerializer(searchParams);
 
 export type SearchParams = Record<string, string | string[] | undefined>;
-

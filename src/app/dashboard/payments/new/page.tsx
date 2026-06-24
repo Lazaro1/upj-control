@@ -10,7 +10,7 @@ export const metadata = {
 
 export default async function NewPaymentPage() {
   const { orgId } = await auth();
-  if (!orgId) redirect('/dashboard/workspaces');
+  if (!orgId) redirect('/auth/sign-in');
 
   // Load ONLY members who have at least one pending or partially paid charge
   const membersWithDebts = await prisma.member.findMany({

@@ -6,49 +6,50 @@
 
 ## Fase 1 — Base operacional
 
-| Parte | Descrição | Status | Data |
-|-------|-----------|--------|------|
-| 1.1 | Infraestrutura base | ✅ Concluída | 2026-03-24 |
-| 1.2 | Autenticação e permissões (Clerk) | ✅ Concluída | 2026-03-25 |
-| 1.3 | Cadastro de irmãos | ✅ Concluída | 2026-03-25 |
-| 1.4 | Tipos de cobrança | ✅ Concluída | 2026-03-25 |
-| 1.5 | Cobranças manuais | ✅ Concluída | 2026-03-25 |
-| 1.6 | Pagamentos e baixa | ✅ Concluída | 2026-03-25 |
+| Parte | Descrição                         | Status       | Data       |
+| ----- | --------------------------------- | ------------ | ---------- |
+| 1.1   | Infraestrutura base               | ✅ Concluída | 2026-03-24 |
+| 1.2   | Autenticação e permissões (Clerk) | ✅ Concluída | 2026-03-25 |
+| 1.3   | Cadastro de irmãos                | ✅ Concluída | 2026-03-25 |
+| 1.4   | Tipos de cobrança                 | ✅ Concluída | 2026-03-25 |
+| 1.5   | Cobranças manuais                 | ✅ Concluída | 2026-03-25 |
+| 1.6   | Pagamentos e baixa                | ✅ Concluída | 2026-03-25 |
 
 ## Fase 2 — Portal e recorrência
 
-| Parte | Descrição | Status | Data |
-|-------|-----------|--------|------|
-| 2.1 | Extrato individual | ✅ Concluída | 2026-03-25 |
-| 2.2 | Geração de PDF | ✅ Concluída | 2026-03-25 |
-| 2.3 | Portal do irmão | ✅ Concluída | 2026-03-26 |
-| 2.4 | Cobranças recorrentes | ✅ Concluída | 2026-03-27 |
+| Parte | Descrição             | Status       | Data       |
+| ----- | --------------------- | ------------ | ---------- |
+| 2.1   | Extrato individual    | ✅ Concluída | 2026-03-25 |
+| 2.2   | Geração de PDF        | ✅ Concluída | 2026-03-25 |
+| 2.3   | Portal do irmão       | ✅ Concluída | 2026-03-26 |
+| 2.4   | Cobranças recorrentes | ✅ Concluída | 2026-03-27 |
 
 ---
 
 ## Fase 3 — Financeiro gerencial
 
-| Parte | Descrição | Status | Data |
-|-------|-----------|--------|------|
-| 3.1 | Caixa geral da loja | ✅ Concluída | 2026-03-30 |
-| 3.2 | Relatórios financeiros | ✅ Concluída | 2026-03-30 |
-| 3.3 | Relatório de inadimplência | ⬜ Pendente | — |
-| 3.4 | Auditoria reforçada | ⬜ Pendente | — |
+| Parte | Descrição                  | Status       | Data       |
+| ----- | -------------------------- | ------------ | ---------- |
+| 3.1   | Caixa geral da loja        | ✅ Concluída | 2026-03-30 |
+| 3.2   | Relatórios financeiros     | ✅ Concluída | 2026-03-30 |
+| 3.3   | Relatório de inadimplência | ✅ Concluída | 2026-03-30 |
+| 3.4   | Auditoria reforçada        | ✅ Concluída | 2026-03-31 |
 
 ## Fase 4 — Automação e fechamento
 
-| Parte | Descrição | Status | Data |
-|-------|-----------|--------|------|
-| 4.1 | Notificações por e-mail | ⬜ Pendente | — |
-| 4.2 | Fechamento mensal | ⬜ Pendente | — |
-| 4.3 | Dashboard executivo | ⬜ Pendente | — |
-| 4.4 | Integrações futuras | ⬜ Pendente | — |
+| Parte | Descrição               | Status      | Data |
+| ----- | ----------------------- | ----------- | ---- |
+| 4.1   | Notificações por e-mail | ⬜ Pendente | —    |
+| 4.2   | Fechamento mensal       | ✅ Concluída | 2026-05-27 |
+| 4.3   | Dashboard executivo     | ✅ Concluída | 2026-05-28 |
+| 4.4   | Integrações futuras     | ⬜ Pendente | —    |
 
 ---
 
 ## Log de entregas
 
 ### Parte 1.1 — Infraestrutura base
+
 **Início:** 2026-03-24
 
 - [x] Projeto Next.js com TypeScript (já existente via template)
@@ -62,10 +63,11 @@
 - [x] Criar singleton `src/lib/db.ts`
 - [x] Atualizar variáveis de ambiente (`.env`, `.env.local`, `env.example.txt`)
 - [x] Build validado (`npm run build` ✅)
-- [x] Subir banco com `docker compose up -d` *(manual pelo dev)*
-- [x] Rodar migration inicial `npx prisma migrate dev --name init` *(manual, requer Docker ativo)*
+- [x] Subir banco com `docker compose up -d` _(manual pelo dev)_
+- [x] Rodar migration inicial `npx prisma migrate dev --name init` _(manual, requer Docker ativo)_
 
 ### Parte 2.2 — Geração de PDF
+
 **Início:** 2026-03-25
 
 - [x] Instalar @react-pdf/renderer
@@ -78,6 +80,7 @@
 - [x] Botões de download integrados na visualização de extrato
 
 ### Parte 2.3 — Portal do irmão
+
 **Início:** 2026-03-26
 
 - [x] Configuração da role `org:member` no `nav-config.ts`
@@ -87,6 +90,7 @@
 - [x] Botão para Baixar Extrato reaproveitado da API de relatórios
 
 ### Parte 2.4 — Cobranças recorrentes
+
 **Início:** 2026-03-27
 
 - [x] Expansão do schema `RecurringChargeRule` para suportar frequência e valores
@@ -98,6 +102,7 @@
 - [x] Logs de auditoria vinculados ao tesoureiro que disparou o lote
 
 ### Parte 3.1 — Caixa geral da loja
+
 **Início:** 2026-03-29 (concluído em 2026-03-30)
 
 - [x] Tabela `cash_transactions` no Prisma (entradas e saídas)
@@ -109,6 +114,7 @@
 - [x] Correção de bugs de re-fetch nos filtros e paginação
 
 ### Parte 3.2 — Relatórios financeiros
+
 **Início:** 2026-03-30
 
 - [x] Módulo central de relatórios (`/dashboard/reports`)
@@ -120,4 +126,66 @@
 - [x] Exportação de relatórios em CSV e PDF (templates `report`, `statement`, `ficha`)
 - [x] Filtros globais de período integrados com as queries
 
+### Parte 3.3 — Relatório de inadimplência
 
+**Início:** 2026-03-30
+
+- [x] Aba de inadimplência integrada ao módulo `/dashboard/reports`
+- [x] Listagem de irmãos com cobranças `pendente` e `due_date < hoje`
+- [x] Consolidado por irmão (nome, quantidade vencidas, total em aberto, cobrança mais antiga)
+- [x] Filtros por tipo de cobrança e período de vencimento (intervalo inclusivo)
+- [x] Indicador de dias em atraso por cobrança
+- [x] Exportação do recorte para CSV e PDF (consolidado + detalhado)
+- [x] Auditoria de exportações em `audit_logs`
+- [x] RBAC aplicado: `org:treasurer`, `org:manager`, `org:admin`; bloqueio de `org:member` (403)
+
+### Parte 3.4 — Auditoria reforçada
+
+**Início:** 2026-03-31
+
+- [x] Estrutura de auditoria evoluída com `org_id` e índices para consulta
+- [x] Utilitário central de escrita de logs (`audit-log-writer`) criado
+- [x] Cobertura de eventos críticos em cobranças e pagamentos com snapshots old/new
+- [x] Gancho de evento `role.permission_changed` e `period.closed` adicionado
+- [x] Nova área `/dashboard/audit-logs` com filtros por usuário, ação e período
+- [x] API de listagem/detalhe de logs com paginação e isolamento por organização
+- [x] Bloqueio explícito para `org:member` e logs em modo somente leitura
+
+### Parte 4.2 — Fechamento mensal
+
+**Início:** 2026-05-27
+
+- [x] Utilitário central de verificação de período (`period-guard.ts`) com `isPeriodClosed` e `requireOpenPeriod`
+- [x] Server Actions completas: `closePeriod`, `reopenPeriod`, `getPeriodStatus`, `getPeriodSummary`, `listPeriodClosings`
+- [x] Proteção de período fechado em cobranças (criar, atualizar, cancelar)
+- [x] Proteção de período fechado em pagamentos (criar, estornar)
+- [x] Proteção de período fechado em transações de caixa (criar)
+- [x] Página `/dashboard/period-closing` com prévia financeira, encerramento e reabertura
+- [x] Resumo financeiro do período (total cobrado, recebido, saldo, entradas/saídas caixa)
+- [x] Tabela de histórico de fechamentos com paginação
+- [x] Reabertura de período restrita a `org:admin` com confirmação e auditoria
+- [x] Ação de auditoria `period.reopened` registrada
+- [x] Ícone `lock` adicionado ao registro de ícones e navegação
+- [x] Entrada de navegação "Fechamento Mensal" no `nav-config.ts`
+- [x] Build validado (`bun run build` ✅)
+
+### Parte 4.3 — Dashboard executivo
+
+**Início:** 2026-05-28
+
+- [x] Remoção de parallel routes mockadas (`@area_stats`, `@bar_stats`, `@pie_stats`, `@sales`)
+- [x] Remoção de componentes mock antigos (area-graph, bar-graph, pie-graph, recent-sales, overview)
+- [x] Server Actions completas: `getDashboardKPIs`, `getDashboardCharts`, `getDashboardAlerts`, `getTopOverdue`, `getRecentPayments`, `getDashboardPeriodStatus`
+- [x] 6 KPI cards com variação mensal: Receita, Cobrado, Em Atraso, Saldo Caixa, Adimplência, Membros Ativos
+- [x] 3 alertas automáticos: mês anterior não encerrado, inadimplência >30%, saldo negativo
+- [x] Gráfico de área: Evolução Receita x Cobranças (12 meses)
+- [x] Gráfico de barras: Receita por Tipo de Cobrança
+- [x] Gráfico de pizza/donut: Composição por Método de Pagamento
+- [x] Gráfico de barras: Evolução da Inadimplência (12 meses)
+- [x] Tabela Top Inadimplência (top 10 com dias em atraso coloridos)
+- [x] Tabela Últimos Pagamentos (10 mais recentes)
+- [x] Badge informativo "Período Encerrado" quando mês está fechado
+- [x] Saudação personalizada com nome do usuário via Clerk
+- [x] Indicador de competência corrente no subtítulo
+- [x] Layout simplificado (página única, sem parallel routes)
+- [x] Build validado (`bun run build` ✅)

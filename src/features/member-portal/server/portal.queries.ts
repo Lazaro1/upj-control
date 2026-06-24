@@ -1,24 +1,53 @@
-'use server';
-
 import { prisma } from '@/lib/db';
 import { auth } from '@clerk/nextjs/server';
-import { ChargeStatus } from '@prisma/client';
+import { unstable_noStore as noStore } from 'next/cache';
+import { findLinkedMember } from '@/lib/auth/member-link';
+import { getChargeRemainingAmount } from '@/lib/charge-balance';
+import { getEffectiveStatus } from '@/features/member-portal/lib/transaction-status';
 
 export async function getMemberByClerkId() {
   const { userId } = await auth();
   if (!userId) return null;
 
-  // O vínculo agora é feito exclusivamente pela tela de verificação de CIM.
-  // Se o clerkUserId não estiver vinculado, o layout do dashboard redireciona
-  // para /auth/verify-cim antes de chegar aqui.
+  const linkedMember = await findLinkedMember(userId);
+  if (!linkedMember) return null;
+
   const member = await prisma.member.findUnique({
-    where: { clerkUserId: userId }
+    where: { id: linkedMember.id }
   });
 
   return member;
 }
 
+function mapPortalCharge(
+  charge: Awaited<
+    ReturnType<
+      typeof prisma.charge.findMany<{
+        include: { chargeType: true; paymentAllocations: true };
+      }>
+    >
+  >[number]
+) {
+  const remainingAmount = getChargeRemainingAmount(charge);
+
+  return {
+    id: charge.id,
+    dueDate: charge.dueDate,
+    description: charge.description,
+    amount: remainingAmount,
+    originalAmount: Number(charge.amount),
+    chargeType: charge.chargeType
+      ? {
+          ...charge.chargeType,
+          defaultAmount: charge.chargeType.defaultAmount?.toNumber() ?? null
+        }
+      : null
+  };
+}
+
 export async function getPortalOverview() {
+  noStore();
+
   const member = await getMemberByClerkId();
 
   if (!member) {
@@ -36,7 +65,8 @@ export async function getPortalOverview() {
         status: { in: ['pendente', 'parcialmente_paga'] }
       },
       include: {
-        chargeType: true
+        chargeType: true,
+        paymentAllocations: true
       },
       orderBy: { dueDate: 'asc' }
     }),
@@ -48,16 +78,17 @@ export async function getPortalOverview() {
     })
   ]);
 
-  const totalDue = charges.reduce(
-    (acc, charge) => acc + charge.amount.toNumber(),
-    0
-  );
+  const openCharges = charges
+    .map(mapPortalCharge)
+    .filter((charge) => charge.amount > 0.01);
 
-  const overdueCharges = charges.filter(
+  const totalDue = openCharges.reduce((acc, charge) => acc + charge.amount, 0);
+
+  const overdueCharges = openCharges.filter(
     (c) => new Date(c.dueDate) < new Date()
   );
-  
-  const upcomingCharges = charges.filter(
+
+  const upcomingCharges = openCharges.filter(
     (c) => new Date(c.dueDate) >= new Date()
   );
 
@@ -71,23 +102,9 @@ export async function getPortalOverview() {
       creditBalance: member.creditBalance.toNumber(),
       totalDue,
       overdueChargesCount: overdueCharges.length,
-      overdueCharges: overdueCharges.map(c => ({
-        ...c,
-        amount: c.amount.toNumber(),
-        chargeType: c.chargeType ? {
-          ...c.chargeType,
-          defaultAmount: c.chargeType.defaultAmount?.toNumber() ?? null
-        } : null
-      })),
-      upcomingCharges: upcomingCharges.map(c => ({
-        ...c,
-        amount: c.amount.toNumber(),
-        chargeType: c.chargeType ? {
-          ...c.chargeType,
-          defaultAmount: c.chargeType.defaultAmount?.toNumber() ?? null
-        } : null
-      })),
-      lastPayments: lastPayments.map(p => ({
+      overdueCharges,
+      upcomingCharges,
+      lastPayments: lastPayments.map((p) => ({
         ...p,
         amount: p.amount.toNumber()
       }))
@@ -102,6 +119,8 @@ export async function getPortalTransactions({
   page?: number;
   limit?: number;
 }) {
+  noStore();
+
   const member = await getMemberByClerkId();
 
   if (!member) {
@@ -128,22 +147,40 @@ export async function getPortalTransactions({
   return {
     success: true,
     data: {
-      items: charges.map(c => ({
-        ...c,
-        amount: c.amount.toNumber(),
-        chargeType: c.chargeType ? {
-          ...c.chargeType,
-          defaultAmount: c.chargeType.defaultAmount?.toNumber() ?? null
-        } : null,
-        paymentAllocations: c.paymentAllocations.map(a => ({
-          ...a,
-          allocatedAmount: a.allocatedAmount.toNumber(),
-          payment: a.payment ? {
-            ...a.payment,
-            amount: a.payment.amount.toNumber()
-          } : null
-        }))
-      })),
+      items: charges.map((c) => {
+        const originalAmount = Number(c.amount);
+        const remainingAmount = getChargeRemainingAmount(c);
+
+        return {
+          id: c.id,
+          memberId: c.memberId,
+          competenceDate: c.competenceDate.toISOString(),
+          dueDate: c.dueDate.toISOString(),
+          description: c.description,
+          amount: originalAmount,
+          originalAmount,
+          remainingAmount,
+          status: c.status,
+          effectiveStatus: getEffectiveStatus(c.status, c.dueDate),
+          createdAt: c.createdAt.toISOString(),
+          chargeType: c.chargeType
+            ? {
+                id: c.chargeType.id,
+                name: c.chargeType.name
+              }
+            : null,
+          paymentAllocations: c.paymentAllocations.map((a) => ({
+            id: a.id,
+            allocatedAmount: Number(a.allocatedAmount),
+            payment: a.payment
+              ? {
+                  paymentDate: a.payment.paymentDate.toISOString(),
+                  paymentMethod: a.payment.paymentMethod
+                }
+              : null
+          }))
+        };
+      }),
       total,
       pageCount: Math.ceil(total / limit)
     }

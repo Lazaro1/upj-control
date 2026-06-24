@@ -6,7 +6,7 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow,
+  TableRow
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
@@ -20,76 +20,104 @@ interface StatementTableProps {
 
 export function StatementTable({ entries }: StatementTableProps) {
   return (
-    <div className="rounded-xl border border-border/40 bg-card/40 backdrop-blur-md overflow-hidden shadow-xl">
-      <Table>
-        <TableHeader className="bg-muted/50">
-          <TableRow>
-            <TableHead className="w-[120px]">Data</TableHead>
-            <TableHead>Descrição / Lançamento</TableHead>
-            <TableHead>Tipo</TableHead>
-            <TableHead>Status / Método</TableHead>
-            <TableHead className="text-right">Valor</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {entries.length === 0 ? (
+    <div className='bg-card/40 border-border/40 max-w-full min-w-0 overflow-hidden rounded-xl border shadow-xl backdrop-blur-md'>
+      <div className='w-full min-w-0'>
+        <Table className='w-full table-fixed'>
+          <TableHeader className='bg-muted/50'>
             <TableRow>
-              <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
-                Nenhuma transação encontrada para este irmão.
-              </TableCell>
+              <TableHead className='w-[108px]'>Data</TableHead>
+              <TableHead className='whitespace-normal'>
+                Descrição / Lançamento
+              </TableHead>
+              <TableHead className='hidden w-[96px] sm:table-cell'>
+                Tipo
+              </TableHead>
+              <TableHead className='hidden w-[140px] lg:table-cell'>
+                Status / Método
+              </TableHead>
+              <TableHead className='w-[132px] text-right'>Valor</TableHead>
             </TableRow>
-          ) : (
-            entries.map((entry) => (
-              <TableRow key={`${entry.type}-${entry.id}`} className="hover:bg-primary/5 transition-colors">
-                <TableCell className="font-medium text-xs">
-                  {format(new Date(entry.date), "dd 'de' MMM, yyyy", { locale: ptBR })}
-                </TableCell>
-                <TableCell>
-                  <div className="flex flex-col">
-                    <span className="font-semibold">{entry.description}</span>
-                    <span className="text-[10px] text-muted-foreground uppercase tracking-tight">
-                      {entry.chargeTypeName || 'Pagamento Registrado'}
-                    </span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Badge
-                    variant={entry.type === 'payment' ? 'default' : 'secondary'}
-                    className="gap-1 px-2 py-0.5 text-[10px]"
-                  >
-                    {entry.type === 'payment' ? (
-                      <>
-                        <IconArrowDownLeft size={12} stroke={3} />
-                        Crédito
-                      </>
-                    ) : (
-                      <>
-                        <IconArrowUpRight size={12} stroke={3} />
-                        Débito
-                      </>
-                    )}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  {entry.type === 'charge' ? (
-                    <Badge variant="outline" className="capitalize text-[10px]">
-                      {entry.status?.replace('_', ' ')}
-                    </Badge>
-                  ) : (
-                    <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 capitalize">
-                      {entry.paymentMethod}
-                    </span>
-                  )}
-                </TableCell>
-                <TableCell className={`text-right font-bold ${entry.type === 'payment' ? 'text-emerald-500' : 'text-destructive'}`}>
-                  {entry.type === 'charge' ? '-' : '+'}
-                  {entry.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+          </TableHeader>
+          <TableBody>
+            {entries.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={5}
+                  className='text-muted-foreground h-32 text-center'
+                >
+                  Nenhuma transação encontrada para este irmão.
                 </TableCell>
               </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+            ) : (
+              entries.map((entry) => (
+                <TableRow
+                  key={`${entry.type}-${entry.id}`}
+                  className='hover:bg-primary/5 transition-colors'
+                >
+                  <TableCell className='text-xs font-medium'>
+                    {format(new Date(entry.date), "dd 'de' MMM, yyyy", {
+                      locale: ptBR
+                    })}
+                  </TableCell>
+                  <TableCell className='whitespace-normal'>
+                    <div className='flex flex-col'>
+                      <span className='font-semibold break-words'>
+                        {entry.description}
+                      </span>
+                      <span className='text-muted-foreground text-[10px] tracking-tight break-words uppercase'>
+                        {entry.chargeTypeName || 'Pagamento Registrado'}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell className='hidden sm:table-cell'>
+                    <Badge
+                      variant={
+                        entry.type === 'payment' ? 'default' : 'secondary'
+                      }
+                      className='gap-1 px-2 py-0.5 text-[10px]'
+                    >
+                      {entry.type === 'payment' ? (
+                        <>
+                          <IconArrowDownLeft size={12} stroke={3} />
+                          Crédito
+                        </>
+                      ) : (
+                        <>
+                          <IconArrowUpRight size={12} stroke={3} />
+                          Débito
+                        </>
+                      )}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className='hidden whitespace-normal lg:table-cell'>
+                    {entry.type === 'charge' ? (
+                      <Badge
+                        variant='outline'
+                        className='text-[10px] capitalize'
+                      >
+                        {entry.status?.replace('_', ' ')}
+                      </Badge>
+                    ) : (
+                      <span className='text-xs font-medium text-emerald-600 capitalize dark:text-emerald-400'>
+                        {entry.paymentMethod}
+                      </span>
+                    )}
+                  </TableCell>
+                  <TableCell
+                    className={`text-right font-bold ${entry.type === 'payment' ? 'text-emerald-500' : 'text-destructive'}`}
+                  >
+                    {entry.type === 'charge' ? '-' : '+'}
+                    {entry.amount.toLocaleString('pt-BR', {
+                      style: 'currency',
+                      currency: 'BRL'
+                    })}
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }

@@ -23,19 +23,27 @@ export default async function ChargeTypesPage(props: ChargeTypesPageProps) {
   const { chargeTypes, total, pageCount } = await getChargeTypes({
     page: params.page,
     perPage: params.perPage,
+    sort: params.sort ?? undefined,
     search: params.name ?? undefined,
-    active: params.status === 'false' ? false : params.status === 'true' ? true : undefined
+    active:
+      params.status === 'false'
+        ? false
+        : params.status === 'true'
+          ? true
+          : undefined
   });
 
   return (
     <div className='flex flex-1 flex-col gap-4 p-4 pt-0'>
-      <div className='flex items-start justify-between'>
-        <Heading
-          title={`Tipos de Cobrança (${total})`}
-          description='Gerencie as categorias de cobrança da loja (Mensalidades, Taxas, etc).'
-        />
-        <Link href='/dashboard/charge-types/new'>
-          <Button>
+      <div className='flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between'>
+        <div className='min-w-0 flex-1'>
+          <Heading
+            title='Tipos de Cobrança'
+            description='Gerencie as categorias de cobrança da loja (Mensalidades, Taxas, etc).'
+          />
+        </div>
+        <Link href='/dashboard/charge-types/new' className='w-full sm:w-auto'>
+          <Button className='w-full sm:w-auto'>
             <IconPlus className='mr-2 h-4 w-4' /> Novo Tipo
           </Button>
         </Link>

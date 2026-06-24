@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@clerk/nextjs/server';
 import { format } from 'date-fns';
+import { writeAuditLog } from '@/features/audit-logs/server/audit-log-writer';
 
 export async function getRecurringChargeTypes() {
   const types = await prisma.chargeType.findMany({
@@ -60,15 +61,10 @@ export async function processBulkCharges(data: {
   dueDate: Date;
   description?: string;
 }) {
-  const { userId } = await auth();
-  if (!userId) {
+  const { userId, orgId } = await auth();
+  if (!userId || !orgId) {
     return { success: false, error: 'Não autorizado.' };
   }
-
-  const actorMember = await prisma.member.findUnique({
-    where: { clerkUserId: userId },
-    select: { id: true }
-  });
 
   // 1. Validar se o período não está fechado (PeriodClosing no futuro)
   const isClosed = await prisma.periodClosing.findUnique({
@@ -150,21 +146,20 @@ export async function processBulkCharges(data: {
 
   revalidatePath('/dashboard/charges');
 
-  await prisma.auditLog.create({
-    data: {
-      actorUserId: actorMember ? userId : null,
-      action: 'charge.recurring_bulk_processed',
-      entityType: 'recurring_charge_batch',
-      entityId: `${data.chargeTypeId}:${format(competenceDate, 'yyyy-MM')}`,
-      newDataJson: {
-        chargeTypeId: data.chargeTypeId,
-        competenceMonth: data.competenceMonth,
-        competenceYear: data.competenceYear,
-        dueDate: data.dueDate.toISOString(),
-        createdCount,
-        skippedCount,
-        totalProcessed: members.length
-      }
+  await writeAuditLog(prisma, {
+    orgId,
+    actorUserId: userId,
+    action: 'charge.recurring_bulk_processed',
+    entityType: 'recurring_charge_batch',
+    entityId: `${data.chargeTypeId}:${format(competenceDate, 'yyyy-MM')}`,
+    newDataJson: {
+      chargeTypeId: data.chargeTypeId,
+      competenceMonth: data.competenceMonth,
+      competenceYear: data.competenceYear,
+      dueDate: data.dueDate.toISOString(),
+      createdCount,
+      skippedCount,
+      totalProcessed: members.length
     }
   });
 

@@ -68,6 +68,7 @@ export default function SignInViewPage() {
             size='default'
           />
           <ClerkSignInForm
+            fallbackRedirectUrl='/dashboard'
             initialValues={{
               emailAddress: 'your_mail+clerk_test@example.com'
             }}

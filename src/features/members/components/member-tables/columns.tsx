@@ -33,7 +33,9 @@ export const columns: ColumnDef<MemberSerializable>[] = [
   {
     id: 'cim',
     accessorKey: 'cim',
-    header: 'CIM',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='CIM' />
+    ),
     cell: ({ row }) => {
       const cim = row.original.cim;
       return cim || '—';
@@ -50,7 +52,9 @@ export const columns: ColumnDef<MemberSerializable>[] = [
   {
     id: 'phone',
     accessorKey: 'phone',
-    header: 'Telefone',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Telefone' />
+    ),
     enableColumnFilter: true,
     cell: ({ row }) => {
       const p = row.original.phone;
@@ -68,7 +72,9 @@ export const columns: ColumnDef<MemberSerializable>[] = [
   {
     id: 'status',
     accessorKey: 'status',
-    header: 'Status',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Status' />
+    ),
     cell: ({ row }) => {
       const status = row.original.status;
       return (
@@ -91,7 +97,9 @@ export const columns: ColumnDef<MemberSerializable>[] = [
   },
   {
     accessorKey: 'joinedAt',
-    header: 'Data de Ingresso',
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title='Data de Ingresso' />
+    ),
     cell: ({ row }) => {
       const date = row.original.joinedAt;
       return date ? new Date(date).toLocaleDateString('pt-BR') : '—';

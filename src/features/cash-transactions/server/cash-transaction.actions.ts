@@ -3,8 +3,25 @@
 import { prisma } from '@/lib/db';
 import { auth } from '@clerk/nextjs/server';
 import { revalidatePath } from 'next/cache';
-import { type CashTransactionFormValues, cashTransactionSchema } from '../schemas/cash-transaction.schema';
+import {
+  type CashTransactionFormValues,
+  cashTransactionSchema
+} from '../schemas/cash-transaction.schema';
 import { Prisma } from '@prisma/client';
+import { writeAuditLog } from '@/features/audit-logs/server/audit-log-writer';
+import { requireOpenPeriod, extractMonthYear } from '@/features/period-closing/server/period-guard';
+
+function parseDateAtBoundary(value: string, boundary: 'start' | 'end'): Date {
+  const [year, month, day] = value.split('-').map(Number);
+  const hour = boundary === 'start' ? 0 : 23;
+  const minute = boundary === 'start' ? 0 : 59;
+  const second = boundary === 'start' ? 0 : 59;
+  const millisecond = boundary === 'start' ? 0 : 999;
+
+  return new Date(
+    Date.UTC(year, month - 1, day, hour, minute, second, millisecond)
+  );
+}
 
 export async function getCashTransactions(
   page = 1,
@@ -13,7 +30,8 @@ export async function getCashTransactions(
   type?: string | string[],
   category?: string,
   dateFrom?: string,
-  dateTo?: string
+  dateTo?: string,
+  sort?: string
 ) {
   try {
     const { orgId, orgRole } = await auth();
@@ -43,11 +61,58 @@ export async function getCashTransactions(
 
     if (dateFrom || dateTo) {
       where.transactionDate = {};
-      if (dateFrom) where.transactionDate.gte = new Date(dateFrom);
+      if (dateFrom) {
+        where.transactionDate.gte = parseDateAtBoundary(dateFrom, 'start');
+      }
       if (dateTo) {
-        const toDate = new Date(dateTo);
-        toDate.setHours(23, 59, 59, 999);
-        where.transactionDate.lte = toDate;
+        where.transactionDate.lte = parseDateAtBoundary(dateTo, 'end');
+      }
+    }
+
+    const sortableFields = [
+      'transactionDate',
+      'type',
+      'category',
+      'description',
+      'amount',
+      'createdAt'
+    ] as const;
+    type CashSortableField = (typeof sortableFields)[number];
+
+    const isSortableField = (value: string): value is CashSortableField =>
+      sortableFields.includes(value as CashSortableField);
+
+    let orderBy:
+      | Prisma.CashTransactionOrderByWithRelationInput
+      | Prisma.CashTransactionOrderByWithRelationInput[] = {
+      transactionDate: 'desc'
+    };
+
+    if (sort) {
+      try {
+        const parsed = JSON.parse(sort);
+        if (!Array.isArray(parsed)) {
+          throw new Error('Invalid sort format');
+        }
+
+        const primarySort = (
+          parsed as Array<{ id?: string; desc?: boolean }>
+        ).find((item) => (item.id ? isSortableField(item.id) : false));
+
+        if (primarySort?.id && isSortableField(primarySort.id)) {
+          const direction: Prisma.SortOrder = primarySort.desc ? 'desc' : 'asc';
+          orderBy =
+            primarySort.id === 'transactionDate'
+              ? { transactionDate: direction }
+              : [
+                  {
+                    [primarySort.id]: direction
+                  } as Prisma.CashTransactionOrderByWithRelationInput,
+                  { transactionDate: 'desc' }
+                ];
+        }
+      } catch {
+        orderBy = { transactionDate: 'desc' };
       }
     }
 
@@ -56,7 +121,7 @@ export async function getCashTransactions(
         where,
         skip: (page - 1) * perPage,
         take: perPage,
-        orderBy: { transactionDate: 'desc' },
+        orderBy,
         include: {
           relatedPayment: true
         }
@@ -64,7 +129,7 @@ export async function getCashTransactions(
       prisma.cashTransaction.count({ where })
     ]);
 
-    const formattedTransactions = transactions.map(tx => ({
+    const formattedTransactions = transactions.map((tx) => ({
       id: tx.id,
       type: tx.type,
       category: tx.category,
@@ -96,6 +161,10 @@ export async function createCashTransaction(data: CashTransactionFormValues) {
 
     const validatedData = cashTransactionSchema.parse(data);
 
+    // Proteção de período fechado — verificar data da transação
+    const { month, year } = extractMonthYear(new Date(validatedData.transactionDate));
+    await requireOpenPeriod(month, year);
+
     const transaction = await prisma.cashTransaction.create({
       data: {
         type: validatedData.type as any,
@@ -109,16 +178,13 @@ export async function createCashTransaction(data: CashTransactionFormValues) {
       }
     });
 
-    const isMember = await prisma.member.findUnique({ where: { clerkUserId: userId } });
-
-    await prisma.auditLog.create({
-      data: {
-        actorUserId: isMember ? userId : null,
-        action: 'cash_transaction.created',
-        entityType: 'cash_transaction',
-        entityId: transaction.id,
-        newDataJson: JSON.parse(JSON.stringify(transaction))
-      }
+    await writeAuditLog(prisma, {
+      orgId,
+      actorUserId: userId,
+      action: 'cash_transaction.created',
+      entityType: 'cash_transaction',
+      entityId: transaction.id,
+      newDataJson: JSON.parse(JSON.stringify(transaction))
     });
 
     revalidatePath('/dashboard/cash-transactions');
@@ -139,11 +205,11 @@ export async function getCashSummary(dateFrom?: string, dateTo?: string) {
 
     if (dateFrom || dateTo) {
       where.transactionDate = {};
-      if (dateFrom) where.transactionDate.gte = new Date(dateFrom);
+      if (dateFrom) {
+        where.transactionDate.gte = parseDateAtBoundary(dateFrom, 'start');
+      }
       if (dateTo) {
-        const toDate = new Date(dateTo);
-        toDate.setHours(23, 59, 59, 999);
-        where.transactionDate.lte = toDate;
+        where.transactionDate.lte = parseDateAtBoundary(dateTo, 'end');
       }
     }
 

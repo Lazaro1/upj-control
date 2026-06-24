@@ -3,11 +3,14 @@ import { renderToStream } from '@react-pdf/renderer';
 import { StatementTemplate } from '../components/pdf/statement-template';
 import { FichaVisualTemplate } from '../components/pdf/ficha-visual-template';
 import { ReportTemplate } from '../components/pdf/report-template';
+import { DelinquencyTemplate } from '../components/pdf/delinquency-template';
 import { getMemberStatement } from '@/features/statements/server/statement.actions';
 import {
   getConsolidatedBalance,
+  getDelinquencyReport,
   getExpenseReport,
-  getIncomeReport
+  getIncomeReport,
+  type DelinquencyReportFilters
 } from './report.actions';
 import { prisma } from '@/lib/db';
 
@@ -179,6 +182,34 @@ export async function generateConsolidatedPDF(
       ]}
       rows={rows}
       generatedAt={generatedAt}
+    />
+  );
+}
+
+export async function generateDelinquencyReportPDF(
+  filters: DelinquencyReportFilters
+) {
+  const result = await getDelinquencyReport(filters);
+
+  if (!result.success || !result.data) {
+    throw new Error(
+      result.error || 'Falha ao buscar relatorio de inadimplencia'
+    );
+  }
+
+  const generatedAt = new Date().toLocaleString('pt-BR');
+
+  const subtitle = `Vencimento: ${filters.dueDateFrom || 'inicio'} ate ${
+    filters.dueDateTo || 'hoje'
+  }${filters.chargeTypeId ? ' | Tipo filtrado' : ''}`;
+
+  return renderToStream(
+    <DelinquencyTemplate
+      subtitle={subtitle}
+      generatedAt={generatedAt}
+      summaries={result.data.summaries}
+      details={result.data.details}
+      totals={result.data.totals}
     />
   );
 }

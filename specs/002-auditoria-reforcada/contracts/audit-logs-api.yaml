@@ -1,0 +1,138 @@
+openapi: 3.0.3
+info:
+  title: Audit Logs API Contract
+  version: 1.0.0
+  description: Contrato de leitura para modulo de auditoria reforcada (Parte 3.4)
+
+paths:
+  /api/audit-logs:
+    get:
+      summary: Lista logs de auditoria com filtros e paginacao
+      parameters:
+        - in: query
+          name: actorUserId
+          schema:
+            type: string
+        - in: query
+          name: action
+          schema:
+            type: string
+        - in: query
+          name: dateFrom
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: dateTo
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - in: query
+          name: pageSize
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Lista paginada de logs
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, pagination]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AuditLogListItem'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '400':
+          description: Filtro invalido (ex. dateFrom > dateTo)
+        '401':
+          description: Nao autenticado
+        '403':
+          description: Sem permissao (ex. org:member)
+
+  /api/audit-logs/{id}:
+    get:
+      summary: Retorna detalhe completo de um log de auditoria
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Detalhe do log
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLogDetail'
+        '401':
+          description: Nao autenticado
+        '403':
+          description: Sem permissao (ex. org:member)
+        '404':
+          description: Log nao encontrado no escopo da organizacao
+
+components:
+  schemas:
+    AuditLogListItem:
+      type: object
+      required: [id, orgId, action, entityType, entityId, createdAt]
+      properties:
+        id:
+          type: string
+        orgId:
+          type: string
+        actorUserId:
+          type: string
+          nullable: true
+        action:
+          type: string
+        entityType:
+          type: string
+        entityId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    AuditLogDetail:
+      allOf:
+        - $ref: '#/components/schemas/AuditLogListItem'
+        - type: object
+          properties:
+            oldDataJson:
+              type: object
+              nullable: true
+              additionalProperties: true
+            newDataJson:
+              type: object
+              nullable: true
+              additionalProperties: true
+
+    Pagination:
+      type: object
+      required: [page, pageSize, totalItems, totalPages]
+      properties:
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        totalItems:
+          type: integer
+        totalPages:
+          type: integer

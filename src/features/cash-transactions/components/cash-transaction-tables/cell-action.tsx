@@ -1,7 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { IconDotsVertical, IconEye } from '@tabler/icons-react';
+import { IconCopy, IconDotsVertical } from '@tabler/icons-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -12,13 +11,21 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import type { CashTransactionSerializable } from './columns';
+import { toast } from 'sonner';
 
 interface CellActionProps {
   transaction: CashTransactionSerializable;
 }
 
 export function CellAction({ transaction }: CellActionProps) {
-  const router = useRouter();
+  const handleCopyId = async () => {
+    try {
+      await navigator.clipboard.writeText(transaction.id);
+      toast.success('ID do lançamento copiado.');
+    } catch {
+      toast.error('Não foi possível copiar o ID.');
+    }
+  };
 
   return (
     <DropdownMenu>
@@ -31,10 +38,9 @@ export function CellAction({ transaction }: CellActionProps) {
       <DropdownMenuContent align='end'>
         <DropdownMenuLabel>Ações</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        
-        {/* <DropdownMenuItem onClick={() => router.push(`/dashboard/cash-transactions/${transaction.id}`)}>
-          <IconEye className='mr-2 h-4 w-4' /> Visualizar
-        </DropdownMenuItem> */}
+        <DropdownMenuItem onClick={handleCopyId}>
+          <IconCopy className='mr-2 h-4 w-4' /> Copiar ID
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

@@ -13,13 +13,15 @@ export default async function MemberStatementPage({
   params: Promise<{ memberId: string }>;
 }) {
   const { orgId } = await auth();
-  if (!orgId) redirect('/dashboard/workspaces');
+  if (!orgId) redirect('/auth/sign-in');
 
   const { memberId } = await params;
 
   return (
     <PageContainer scrollable={true}>
-      <StatementView memberId={memberId} />
+      <div className='min-w-0'>
+        <StatementView memberId={memberId} />
+      </div>
     </PageContainer>
   );
 }

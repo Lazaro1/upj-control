@@ -1,13 +1,19 @@
 'use server';
 
 import { prisma } from '@/lib/db';
-import { MemberStatus } from '@prisma/client';
+import { MemberStatus, type Prisma } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
-import { memberFormSchema, type MemberFormValues } from '../schemas/member.schema';
+import {
+  memberFormSchema,
+  type MemberFormValues
+} from '../schemas/member.schema';
+import { auth } from '@clerk/nextjs/server';
+import { writeAuditLog } from '@/features/audit-logs/server/audit-log-writer';
 
 export async function getMembers({
   page = 1,
   perPage = 10,
+  sort,
   fullName,
   email,
   phone,
@@ -15,6 +21,7 @@ export async function getMembers({
 }: {
   page?: number;
   perPage?: number;
+  sort?: string;
   fullName?: string;
   email?: string;
   phone?: string;
@@ -37,12 +44,58 @@ export async function getMembers({
     where.status = { in: statuses };
   }
 
+  const sortableFields = [
+    'fullName',
+    'cim',
+    'email',
+    'phone',
+    'status',
+    'joinedAt',
+    'createdAt'
+  ] as const;
+  type MemberSortableField = (typeof sortableFields)[number];
+
+  const isMemberSortableField = (value: string): value is MemberSortableField =>
+    sortableFields.includes(value as MemberSortableField);
+
+  let orderBy:
+    | Prisma.MemberOrderByWithRelationInput
+    | Prisma.MemberOrderByWithRelationInput[] = { createdAt: 'desc' };
+
+  if (sort) {
+    try {
+      const parsed = JSON.parse(sort);
+      if (!Array.isArray(parsed)) {
+        throw new Error('Invalid sort format');
+      }
+
+      const primarySort = (
+        parsed as Array<{ id?: string; desc?: boolean }>
+      ).find((item) => (item.id ? isMemberSortableField(item.id) : false));
+
+      if (primarySort?.id && isMemberSortableField(primarySort.id)) {
+        const direction: Prisma.SortOrder = primarySort.desc ? 'desc' : 'asc';
+        orderBy =
+          primarySort.id === 'createdAt'
+            ? { createdAt: direction }
+            : [
+                {
+                  [primarySort.id]: direction
+                } as Prisma.MemberOrderByWithRelationInput,
+                { createdAt: 'desc' }
+              ];
+      }
+    } catch {
+      orderBy = { createdAt: 'desc' };
+    }
+  }
+
   const [members, total] = await Promise.all([
     prisma.member.findMany({
       where,
       skip: (page - 1) * perPage,
       take: perPage,
-      orderBy: { createdAt: 'desc' }
+      orderBy
     }),
     prisma.member.count({ where })
   ]);
@@ -119,5 +172,28 @@ export async function deleteMember(id: string) {
   });
 
   revalidatePath('/dashboard/members');
+  return { success: true };
+}
+
+export async function logRolePermissionChanged(params: {
+  targetUserId: string;
+  oldRole?: string;
+  newRole: string;
+}) {
+  const { userId, orgId } = await auth();
+  if (!userId || !orgId) {
+    return { success: false, error: 'Nao autorizado' };
+  }
+
+  await writeAuditLog(prisma, {
+    orgId,
+    actorUserId: userId,
+    action: 'role.permission_changed',
+    entityType: 'role',
+    entityId: params.targetUserId,
+    oldDataJson: params.oldRole ? { role: params.oldRole } : undefined,
+    newDataJson: { role: params.newRole }
+  });
+
   return { success: true };
 }

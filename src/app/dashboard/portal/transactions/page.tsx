@@ -9,27 +9,47 @@ export const metadata = {
   title: 'Lançamentos — Meu Portal'
 };
 
-export default async function PortalTransactionsPage(
-  props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
-) {
+export const dynamic = 'force-dynamic';
+
+export default async function PortalTransactionsPage(props: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const searchParams = await props.searchParams;
-  const page = typeof searchParams.page === 'string' ? parseInt(searchParams.page, 10) : 1;
-  const limit = typeof searchParams.limit === 'string' ? parseInt(searchParams.limit, 10) : 10;
+  const page =
+    typeof searchParams.page === 'string' ? parseInt(searchParams.page, 10) : 1;
+  const limit =
+    typeof searchParams.perPage === 'string'
+      ? parseInt(searchParams.perPage, 10)
+      : typeof searchParams.limit === 'string'
+        ? parseInt(searchParams.limit, 10)
+        : 10;
 
   const { data, success } = await getPortalTransactions({ page, limit });
 
   return (
     <PageContainer scrollable={false}>
-      <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+      <div className='flex flex-1 flex-col gap-4 p-4 pt-0 pb-8'>
         <Heading
-          title="Meus Lançamentos"
-          description="Histórico completo de cobranças e pagamentos vinculados a você."
+          title='Meus Lançamentos'
+          description='Histórico completo de cobranças e pagamentos vinculados a você.'
         />
-        <Suspense fallback={<div className="flex justify-center p-8"><IconLoader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>}>
+        <Suspense
+          fallback={
+            <div className='flex justify-center p-8'>
+              <IconLoader2 className='h-8 w-8 animate-spin text-muted-foreground' />
+            </div>
+          }
+        >
           {success && data ? (
-            <TransactionsTable data={data.items as any} totalItems={data.total} />
+            <TransactionsTable
+              data={data.items}
+              pageCount={data.pageCount}
+              totalItems={data.total}
+            />
           ) : (
-            <div className="text-center py-8 text-muted-foreground">Erro ao carregar lançamentos.</div>
+            <div className='py-8 text-center text-muted-foreground'>
+              Erro ao carregar lançamentos.
+            </div>
           )}
         </Suspense>
       </div>

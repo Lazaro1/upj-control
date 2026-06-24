@@ -8,13 +8,15 @@ export async function PaymentListing() {
   const pageLimit = searchParamsCache.get('perPage');
   const memberId = searchParamsCache.get('memberId');
   const paymentMethod = searchParamsCache.get('paymentMethod');
+  const sort = searchParamsCache.get('sort');
 
   const result = await getPayments(
     page || undefined,
     pageLimit || undefined,
     search || undefined,
     memberId || undefined,
-    paymentMethod || undefined
+    paymentMethod || undefined,
+    sort || undefined
   );
 
   const data = result.success && result.data ? result.data : [];

@@ -136,6 +136,7 @@ model CashTransaction {
 
 model AuditLog {
   id          String   @id @default(cuid())
+  orgId       String?  @map("org_id")
   actorUserId String?  @map("actor_user_id")
   action      String
   entityType  String   @map("entity_type")
@@ -144,6 +145,10 @@ model AuditLog {
   newDataJson Json?    @map("new_data_json")
   createdAt   DateTime @default(now()) @map("created_at")
   actorMember Member?  @relation(fields: [actorUserId], references: [clerkUserId])
+
+  @@index([orgId, createdAt])
+  @@index([orgId, action, createdAt])
+  @@index([orgId, actorUserId, createdAt])
 
   @@map("audit_logs")
 }

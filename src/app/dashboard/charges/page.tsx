@@ -20,7 +20,7 @@ type PageProps = {
 
 export default async function ChargesPage(props: PageProps) {
   const { orgId } = await auth();
-  if (!orgId) redirect('/dashboard/workspaces');
+  if (!orgId) redirect('/auth/sign-in');
 
   const searchParams = await props.searchParams;
   searchParamsCache.parse(searchParams);
@@ -31,7 +31,10 @@ export default async function ChargesPage(props: PageProps) {
       pageTitle='Cobranças Manuais'
       pageDescription='Gere e gerencie recebimentos pendentes da sua loja.'
       pageHeaderAction={
-        <Link href='/dashboard/charges/new' className={cn(buttonVariants())}>
+        <Link
+          href='/dashboard/charges/new'
+          className={cn(buttonVariants(), 'w-full justify-center sm:w-auto')}
+        >
           <IconPlus className='mr-2 h-4 w-4' /> Nova Cobrança
         </Link>
       }

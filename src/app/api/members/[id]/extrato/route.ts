@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { generateMemberStatementPDF, generateFichaVisualPDF } from '@/features/reports/server/pdf-service';
+import {
+  generateMemberStatementPDF,
+  generateFichaVisualPDF
+} from '@/features/reports/server/pdf-service';
+import { assertMemberStatementAccess } from '@/features/statements/server/statement-access';
 import { prisma } from '@/lib/db';
 
 export async function GET(
@@ -8,12 +12,10 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { orgId, userId } = await auth();
-    if (!orgId) {
-      return new NextResponse('Não autorizado', { status: 401 });
-    }
-
     const { id } = await params;
+
+    await assertMemberStatementAccess(id);
+
     const { searchParams } = new URL(req.url);
     const type = searchParams.get('type') || 'extrato';
 
@@ -27,28 +29,28 @@ export async function GET(
       stream = await generateMemberStatementPDF(id);
       filename = `extrato-${id}.pdf`;
     }
-    
+
+    const { userId } = await auth();
     const actorMember = await prisma.member.findUnique({
       where: { clerkUserId: userId || '' }
     });
 
-    // Audit Log entry
     await prisma.auditLog.create({
       data: {
         actorUserId: actorMember ? userId : null,
         action: `report.generated.${type}`,
         entityType: 'member',
         entityId: id,
-        newDataJson: { 
-          type, 
-          filename, 
-          actorClerkId: userId // Still recorded in JSON even if not linked via FK
+        newDataJson: {
+          type,
+          filename,
+          actorClerkId: userId
         }
       }
     });
-    
-    const chunks: any[] = [];
-    for await (const chunk of stream as any) {
+
+    const chunks: Uint8Array[] = [];
+    for await (const chunk of stream as AsyncIterable<Uint8Array>) {
       chunks.push(chunk);
     }
     const buffer = Buffer.concat(chunks);
@@ -60,8 +62,12 @@ export async function GET(
         'Content-Disposition': `attachment; filename="${filename}"`
       }
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[PDF_GEN_ERROR]', error);
-    return new NextResponse(error.message || 'Erro interno', { status: 500 });
+    const message =
+      error instanceof Error ? error.message : 'Erro interno';
+    const status = message === 'Não autorizado' ? 401 : 500;
+
+    return new NextResponse(message, { status });
   }
 }

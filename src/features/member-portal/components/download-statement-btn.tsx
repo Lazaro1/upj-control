@@ -29,7 +29,8 @@ export function DownloadStatementBtn({
       });
 
       if (!response.ok) {
-        throw new Error('Falha ao gerar o documento');
+        const errorText = await response.text();
+        throw new Error(errorText || 'Falha ao gerar o documento');
       }
 
       const blob = await response.blob();
@@ -45,7 +46,9 @@ export function DownloadStatementBtn({
       toast.success('Documento baixado com sucesso');
     } catch (error) {
       console.error(error);
-      toast.error('Ocorreu um erro ao baixar o documento. Tente novamente.');
+      const message =
+        error instanceof Error ? error.message : 'Erro desconhecido';
+      toast.error(message || 'Ocorreu um erro ao baixar o documento. Tente novamente.');
     } finally {
       setIsLoading(false);
     }

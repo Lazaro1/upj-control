@@ -1,6 +1,7 @@
 # Dependencies (installed inside Docker)
 node_modules/
 .pnpm-store/
+.worktrees/
 
 # Build outputs (generated during docker build)
 .next/
@@ -22,10 +23,14 @@ __mocks__/
 .gitattributes
 .vscode/
 .idea/
+.opencode/
+.specify/
+specs/
 
 # Environment variables
 .env
 .env*.local
+.env.docker
 .env.development
 .env.test
 .env.production.local
@@ -53,6 +58,10 @@ docs/
 
 # TypeScript build metadata
 *.tsbuildinfo
+
+# Lockfiles não usados no build (bun.lock é o canônico)
+package-lock.json
+yarn.lock
 
 # Config files not needed in image
 *.pem

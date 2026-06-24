@@ -79,6 +79,7 @@ export default function SignUpViewPage({ stars }: { stars: number }) {
             </div>
           </Link>
           <ClerkSignUpForm
+            fallbackRedirectUrl='/dashboard'
             initialValues={{
               emailAddress: 'your_mail+clerk_test@example.com'
             }}
