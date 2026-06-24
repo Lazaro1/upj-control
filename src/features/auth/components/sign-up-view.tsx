@@ -79,8 +79,7 @@ export default function SignUpViewPage({ stars }: { stars: number }) {
             </div>
           </Link>
           <ClerkSignUpForm
-            fallbackRedirectUrl='/auth/verify-cim'
-            forceRedirectUrl='/auth/verify-cim'
+            fallbackRedirectUrl='/dashboard'
             initialValues={{
               emailAddress: 'your_mail+clerk_test@example.com'
             }}

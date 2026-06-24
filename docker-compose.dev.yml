@@ -1,0 +1,29 @@
+# Apenas o banco para desenvolvimento local (app roda com `bun run dev` no host).
+#
+# Uso:
+#   docker compose -f docker-compose.dev.yml up -d
+#   cp env.example.txt .env.local   # DATABASE_URL com localhost:5432
+#   bun run dev
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: upj-postgres-dev
+    restart: unless-stopped
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_USER: upj
+      POSTGRES_PASSWORD: upj_secret
+      POSTGRES_DB: upj_control
+    volumes:
+      - pgdata_dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U upj -d upj_control']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  pgdata_dev:

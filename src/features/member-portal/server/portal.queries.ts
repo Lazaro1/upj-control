@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db';
 import { auth } from '@clerk/nextjs/server';
 import { unstable_noStore as noStore } from 'next/cache';
+import { findLinkedMember } from '@/lib/auth/member-link';
 import { getChargeRemainingAmount } from '@/lib/charge-balance';
 import { getEffectiveStatus } from '@/features/member-portal/lib/transaction-status';
 
@@ -8,11 +9,11 @@ export async function getMemberByClerkId() {
   const { userId } = await auth();
   if (!userId) return null;
 
-  // O vínculo agora é feito exclusivamente pela tela de verificação de CIM.
-  // Se o clerkUserId não estiver vinculado, o layout do dashboard redireciona
-  // para /auth/verify-cim antes de chegar aqui.
+  const linkedMember = await findLinkedMember(userId);
+  if (!linkedMember) return null;
+
   const member = await prisma.member.findUnique({
-    where: { clerkUserId: userId }
+    where: { id: linkedMember.id }
   });
 
   return member;

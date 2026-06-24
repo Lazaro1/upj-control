@@ -8,6 +8,11 @@ import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
+
+import {
+  findLinkedMember,
+  isAdminRole
+} from '@/lib/auth/member-link';
 import { prisma } from '@/lib/db';
 
 export const metadata: Metadata = {
@@ -34,18 +39,10 @@ async function checkMemberAccess() {
   if (!userId) return;
 
   // Roles administrativos são isentos da verificação de CIM
-  const adminRoles = ['org:admin', 'org:treasurer', 'org:manager'];
-  if (orgRole && adminRoles.includes(orgRole)) return;
+  if (isAdminRole(orgRole)) return;
 
-  // 1. Verificar se já existe vínculo pelo clerkUserId
-  const linkedMember = await prisma.member.findUnique({
-    where: { clerkUserId: userId },
-    select: { id: true }
-  });
-
-  if (linkedMember) return; // Já vinculado
-
-  // 2. Buscar email do Clerk
+  const linkedMember = await findLinkedMember(userId);
+  if (linkedMember) return;
   const user = await currentUser();
   if (!user) return;
 

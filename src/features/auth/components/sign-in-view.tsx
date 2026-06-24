@@ -68,8 +68,7 @@ export default function SignInViewPage() {
             size='default'
           />
           <ClerkSignInForm
-            fallbackRedirectUrl='/auth/verify-cim'
-            forceRedirectUrl='/auth/verify-cim'
+            fallbackRedirectUrl='/dashboard'
             initialValues={{
               emailAddress: 'your_mail+clerk_test@example.com'
             }}
