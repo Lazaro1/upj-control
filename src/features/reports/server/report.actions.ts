@@ -1,7 +1,15 @@
 'use server';
 
 import { prisma } from '@/lib/db';
-import { requireStaffAuth } from '@/lib/auth/roles';
+import { requireStaffAuth } from '@/lib/auth/roles.server';
+import {
+  calcDaysOverdue,
+  getOverdueOpenAmount,
+  getTodayInOrgTimezone,
+  OVERDUE_CHARGE_STATUSES,
+  parseIsoDateStart,
+  roundMoney
+} from '@/lib/delinquency';
 import { Prisma } from '@prisma/client';
 
 function buildDateFilter(
@@ -376,44 +384,8 @@ export interface DelinquencyReportData {
   };
 }
 
-function roundMoney(value: number): number {
-  return Number(value.toFixed(2));
-}
-
-function parseIsoDateStart(dateStr: string): Date {
-  return new Date(`${dateStr}T00:00:00.000Z`);
-}
-
 function parseIsoDateEnd(dateStr: string): Date {
   return new Date(`${dateStr}T23:59:59.999Z`);
-}
-
-function getTodayInOrgTimezone(): Date {
-  const timeZone = process.env.ORG_TIMEZONE || 'America/Sao_Paulo';
-  const todayIso = new Intl.DateTimeFormat('en-CA', {
-    timeZone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-  }).format(new Date());
-
-  return parseIsoDateStart(todayIso);
-}
-
-function calcDaysOverdue(dueDate: Date, todayRef: Date): number {
-  const dueUtc = Date.UTC(
-    dueDate.getUTCFullYear(),
-    dueDate.getUTCMonth(),
-    dueDate.getUTCDate()
-  );
-  const todayUtc = Date.UTC(
-    todayRef.getUTCFullYear(),
-    todayRef.getUTCMonth(),
-    todayRef.getUTCDate()
-  );
-
-  const msPerDay = 24 * 60 * 60 * 1000;
-  return Math.max(0, Math.floor((todayUtc - dueUtc) / msPerDay));
 }
 
 async function assertDelinquencyAccess() {
@@ -475,7 +447,7 @@ export async function getDelinquencyReport(
     const [charges, chargeTypeOptions] = await Promise.all([
       prisma.charge.findMany({
         where: {
-          status: 'pendente',
+          status: { in: [...OVERDUE_CHARGE_STATUSES] },
           dueDate: dueDateFilter,
           ...(filters.chargeTypeId
             ? {
@@ -488,6 +460,9 @@ export async function getDelinquencyReport(
           memberId: true,
           dueDate: true,
           amount: true,
+          paymentAllocations: {
+            select: { allocatedAmount: true }
+          },
           member: {
             select: {
               fullName: true
@@ -512,19 +487,23 @@ export async function getDelinquencyReport(
       })
     ]);
 
-    const details: DelinquencyDetailRow[] = charges.map((charge) => {
-      const openAmount = roundMoney(Number(charge.amount || 0));
-      return {
-        chargeId: charge.id,
-        memberId: charge.memberId,
-        memberName: charge.member.fullName,
-        chargeTypeId: charge.chargeType.id,
-        chargeTypeName: charge.chargeType.name,
-        dueDate: charge.dueDate.toISOString(),
-        openAmount,
-        daysOverdue: calcDaysOverdue(charge.dueDate, todayRef)
-      };
-    });
+    const details: DelinquencyDetailRow[] = charges
+      .map((charge) => {
+        const openAmount = getOverdueOpenAmount(charge);
+        if (openAmount <= 0.01) return null;
+
+        return {
+          chargeId: charge.id,
+          memberId: charge.memberId,
+          memberName: charge.member.fullName,
+          chargeTypeId: charge.chargeType.id,
+          chargeTypeName: charge.chargeType.name,
+          dueDate: charge.dueDate.toISOString(),
+          openAmount,
+          daysOverdue: calcDaysOverdue(charge.dueDate, todayRef)
+        };
+      })
+      .filter((row): row is DelinquencyDetailRow => row !== null);
 
     const summariesMap = details.reduce(
       (acc, row) => {

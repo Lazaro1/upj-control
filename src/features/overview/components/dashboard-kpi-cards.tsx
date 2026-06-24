@@ -10,25 +10,11 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-
-interface KPICard {
-  label: string;
-  value: number;
-  formattedValue: string;
-  variation: number | null;
-  variationLabel: string;
-  trend: 'up' | 'down' | 'neutral';
-  icon: string;
-}
-
-interface DashboardKPIs {
-  revenue: KPICard;
-  charged: KPICard;
-  overdue: KPICard;
-  cashBalance: KPICard;
-  complianceRate: KPICard;
-  activeMembers: KPICard;
-}
+import type {
+  DashboardKPIs,
+  KPICard,
+  KPIVariationUnit
+} from '@/features/overview/server/dashboard.actions';
 
 const iconMap: Record<string, React.ElementType> = {
   trendingUp: IconTrendingUp,
@@ -39,41 +25,19 @@ const iconMap: Record<string, React.ElementType> = {
   usersGroup: IconUsersGroup
 };
 
-const kpiConfig: Record<
-  string,
-  { color: string; gradient: string; label: string }
-> = {
-  revenue: {
-    color: 'emerald',
-    gradient: 'from-emerald-500 to-emerald-500/40',
-    label: 'Receita'
+const kpiSections: {
+  title: string;
+  keys: (keyof DashboardKPIs)[];
+}[] = [
+  {
+    title: 'Resumo financeiro',
+    keys: ['revenue', 'charged', 'cashBalance']
   },
-  charged: {
-    color: 'blue',
-    gradient: 'from-blue-500 to-blue-500/40',
-    label: 'Cobrado'
-  },
-  overdue: {
-    color: 'red',
-    gradient: 'from-red-500 to-red-500/40',
-    label: 'Inadimplência'
-  },
-  cashBalance: {
-    color: 'emerald',
-    gradient: 'from-emerald-500 to-emerald-500/40',
-    label: 'Saldo em Caixa'
-  },
-  complianceRate: {
-    color: 'emerald',
-    gradient: 'from-emerald-500 to-emerald-500/40',
-    label: 'Taxa de Adimplência'
-  },
-  activeMembers: {
-    color: 'primary',
-    gradient: 'from-primary to-primary/40',
-    label: 'Membros Ativos'
+  {
+    title: 'Inadimplência e membros',
+    keys: ['overdue', 'complianceRate', 'activeMembers']
   }
-};
+];
 
 function getCashBalanceColor(value: number) {
   return value >= 0 ? 'emerald' : 'red';
@@ -92,7 +56,15 @@ function getCardColor(key: string, kpi: KPICard): string {
   if (key === 'complianceRate') {
     return getComplianceColor(kpi.value);
   }
-  return kpiConfig[key]?.color || 'primary';
+
+  const defaults: Record<string, string> = {
+    revenue: 'emerald',
+    charged: 'blue',
+    overdue: 'red',
+    activeMembers: 'primary'
+  };
+
+  return defaults[key] || 'primary';
 }
 
 function colorClass(color: string, suffix: string): string {
@@ -116,70 +88,110 @@ function colorClass(color: string, suffix: string): string {
   return map[`${color}-${suffix}`] || '';
 }
 
-export default function DashboardKPICards({ data }: { data: DashboardKPIs }) {
-  const entries = Object.entries(data) as [string, KPICard][];
+function formatVariation(variation: number, unit: KPIVariationUnit): string {
+  const sign = variation > 0 ? '+' : '';
+
+  if (unit === 'percentagePoints') {
+    return `${sign}${variation.toFixed(1)} p.p.`;
+  }
+
+  if (unit === 'absolute') {
+    return `${sign}${variation}`;
+  }
+
+  return `${sign}${variation.toFixed(1)}%`;
+}
+
+function isTrendPositive(kpi: KPICard): boolean {
+  if (kpi.trend === 'neutral') return true;
+  const isUp = kpi.trend === 'up';
+  return kpi.positiveIsGood ? isUp : !isUp;
+}
+
+interface KPICardItemProps {
+  cardKey: string;
+  kpi: KPICard;
+}
+
+function KPICardItem({ cardKey, kpi }: KPICardItemProps) {
+  const color = getCardColor(cardKey, kpi);
+  const Icon = iconMap[kpi.icon] || IconTrendingUp;
+  const trendIsPositive = isTrendPositive(kpi);
+  const valueUsesColor =
+    cardKey === 'cashBalance' || cardKey === 'complianceRate';
 
   return (
-    <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3'>
-      {entries.map(([key, kpi]) => {
-        const color = getCardColor(key, kpi);
-        const Icon = iconMap[kpi.icon] || IconTrendingUp;
-        const isPositiveTrend = kpi.trend === 'up';
-
-        return (
-          <Card key={key} className='relative overflow-hidden'>
-            <div
+    <Card className='relative h-full overflow-hidden'>
+      <div
+        className={cn(
+          'absolute top-0 left-0 h-1 w-full bg-gradient-to-r',
+          colorClass(color, 'gradient')
+        )}
+      />
+      <CardContent className='flex h-full items-start gap-4 p-4 sm:p-5'>
+        <div
+          className={cn(
+            'shrink-0 rounded-full p-3',
+            colorClass(color, 'bg'),
+            colorClass(color, 'text')
+          )}
+        >
+          <Icon className='h-5 w-5 sm:h-6 sm:w-6' />
+        </div>
+        <div className='flex min-w-0 flex-1 flex-col gap-1'>
+          <p className='text-muted-foreground text-sm font-medium'>
+            {kpi.label}
+          </p>
+          <h3
+            className={cn(
+              'truncate text-xl font-bold sm:text-2xl',
+              valueUsesColor && colorClass(color, 'text')
+            )}
+          >
+            {kpi.formattedValue}
+          </h3>
+          {kpi.variation !== null && (
+            <Badge
+              variant='outline'
               className={cn(
-                'absolute top-0 left-0 h-1 w-full bg-gradient-to-r',
-                colorClass(color, 'gradient')
+                'mt-1 w-fit gap-1 text-xs',
+                trendIsPositive
+                  ? 'border-emerald-200 text-emerald-600'
+                  : 'border-red-200 text-red-600'
               )}
-            />
-            <CardContent className='flex items-center gap-4 p-4 sm:p-6'>
-              <div
-                className={cn(
-                  'rounded-full p-3',
-                  colorClass(color, 'bg'),
-                  colorClass(color, 'text')
-                )}
-              >
-                <Icon className='h-6 w-6' />
-              </div>
-              <div className='min-w-0 flex-1'>
-                <p className='text-muted-foreground text-sm font-medium'>
-                  {kpi.label}
-                </p>
-                <h3 className='truncate text-xl font-bold sm:text-2xl'>
-                  {kpi.formattedValue}
-                </h3>
-                {kpi.variation !== null && (
-                  <div className='mt-1 flex items-center gap-2'>
-                    <Badge
-                      variant='outline'
-                      className={cn(
-                        'gap-1 text-xs',
-                        isPositiveTrend
-                          ? 'border-emerald-200 text-emerald-600'
-                          : 'border-red-200 text-red-600'
-                      )}
-                    >
-                      {isPositiveTrend ? (
-                        <IconTrendingUp className='h-3 w-3' />
-                      ) : (
-                        <IconTrendingDown className='h-3 w-3' />
-                      )}
-                      {kpi.variation > 0 ? '+' : ''}
-                      {kpi.variation.toFixed(1)}%
-                    </Badge>
-                  </div>
-                )}
-                <p className='text-muted-foreground mt-1 text-xs'>
-                  {kpi.variationLabel}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        );
-      })}
+            >
+              {kpi.trend === 'up' ? (
+                <IconTrendingUp className='h-3 w-3' />
+              ) : kpi.trend === 'down' ? (
+                <IconTrendingDown className='h-3 w-3' />
+              ) : null}
+              {formatVariation(kpi.variation, kpi.variationUnit)}
+            </Badge>
+          )}
+          <p className='text-muted-foreground text-xs leading-relaxed'>
+            {kpi.variationLabel}
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+export default function DashboardKPICards({ data }: { data: DashboardKPIs }) {
+  return (
+    <div className='space-y-5'>
+      {kpiSections.map((section) => (
+        <section key={section.title}>
+          <h2 className='text-muted-foreground mb-3 text-xs font-semibold tracking-wide uppercase'>
+            {section.title}
+          </h2>
+          <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3'>
+            {section.keys.map((key) => (
+              <KPICardItem key={key} cardKey={key} kpi={data[key]} />
+            ))}
+          </div>
+        </section>
+      ))}
     </div>
   );
 }

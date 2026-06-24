@@ -1,7 +1,7 @@
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import PageContainer from '@/components/layout/page-container';
 import { RecurringChargesPage } from '@/features/charges/components/recurring-charges-page';
-import { assertFinancialWritePage } from '@/lib/auth/roles';
+import { assertFinancialWritePage } from '@/lib/auth/roles.server';
 
 export const metadata = {
   title: 'Lançamento Mensal | UPJ Control'

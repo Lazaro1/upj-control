@@ -9,8 +9,11 @@ import {
 } from '../schemas/charge.schema';
 import { ChargeStatus, Prisma } from '@prisma/client';
 import { writeAuditLog } from '@/features/audit-logs/server/audit-log-writer';
-import { requireFinancialWrite } from '@/lib/auth/roles';
-import { requireOpenPeriod, extractMonthYear } from '@/features/period-closing/server/period-guard';
+import { requireFinancialWrite } from '@/lib/auth/roles.server';
+import {
+  requireOpenPeriod,
+  extractMonthYear
+} from '@/features/period-closing/server/period-guard';
 
 export async function getCharges(
   page = 1,
@@ -160,7 +163,9 @@ export async function createCharge(data: ChargeFormValues) {
     const validatedData = chargeFormSchema.parse(data);
 
     // Proteção de período fechado
-    const { month, year } = extractMonthYear(new Date(validatedData.competenceDate));
+    const { month, year } = extractMonthYear(
+      new Date(validatedData.competenceDate)
+    );
     await requireOpenPeriod(month, year);
 
     const charge = await prisma.charge.create({
@@ -187,6 +192,7 @@ export async function createCharge(data: ChargeFormValues) {
     });
 
     revalidatePath('/dashboard/charges');
+    revalidatePath('/dashboard/overview');
     return { success: true, data: charge };
   } catch (error: any) {
     console.error('Error creating charge:', error);
@@ -248,6 +254,7 @@ export async function updateCharge(
     });
 
     revalidatePath('/dashboard/charges');
+    revalidatePath('/dashboard/overview');
     return { success: true, data: updatedCharge };
   } catch (error: any) {
     console.error('Error updating charge:', error);
@@ -288,6 +295,7 @@ export async function cancelCharge(id: string) {
     });
 
     revalidatePath('/dashboard/charges');
+    revalidatePath('/dashboard/overview');
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };

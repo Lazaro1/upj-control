@@ -2,7 +2,14 @@ import PageContainer from '@/components/layout/page-container';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import { resolveDashboardLanding } from '@/lib/auth/landing';
-import { getDashboardKPIs, getDashboardCharts, getDashboardAlerts, getTopOverdue, getRecentPayments, getDashboardPeriodStatus } from '@/features/overview/server/dashboard.actions';
+import {
+  getDashboardKPIs,
+  getDashboardCharts,
+  getDashboardAlerts,
+  getTopOverdue,
+  getRecentPayments,
+  getDashboardPeriodStatus
+} from '@/features/overview/server/dashboard.actions';
 import DashboardKPICards from '@/features/overview/components/dashboard-kpi-cards';
 import DashboardAlerts from '@/features/overview/components/dashboard-alerts';
 import DashboardAreaChart from '@/features/overview/components/dashboard-area-chart';
@@ -18,9 +25,22 @@ export const metadata = {
   title: 'Dashboard: Visão Geral'
 };
 
+export const dynamic = 'force-dynamic';
+
 const MONTH_NAMES = [
-  '', 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+  '',
+  'Janeiro',
+  'Fevereiro',
+  'Março',
+  'Abril',
+  'Maio',
+  'Junho',
+  'Julho',
+  'Agosto',
+  'Setembro',
+  'Outubro',
+  'Novembro',
+  'Dezembro'
 ];
 
 export default async function OverviewPage() {
@@ -39,20 +59,28 @@ export default async function OverviewPage() {
   const currentYear = now.getFullYear();
 
   // Fetch all data in parallel
-  const [kpis, charts, alerts, topOverdue, recentPayments, periodStatus] = await Promise.all([
-    getDashboardKPIs(currentMonth, currentYear),
-    getDashboardCharts(currentMonth, currentYear),
-    getDashboardAlerts(currentMonth, currentYear),
-    getTopOverdue(10),
-    getRecentPayments(10),
-    getDashboardPeriodStatus(currentMonth, currentYear)
-  ]);
+  const [kpis, charts, alerts, topOverdue, recentPayments, periodStatus] =
+    await Promise.all([
+      getDashboardKPIs(currentMonth, currentYear),
+      getDashboardCharts(currentMonth, currentYear),
+      getDashboardAlerts(currentMonth, currentYear),
+      getTopOverdue(10),
+      getRecentPayments(10),
+      getDashboardPeriodStatus(currentMonth, currentYear)
+    ]);
 
   const kpiData = kpis.success && kpis.data ? kpis.data : null;
   const chartData = charts.success && charts.data ? charts.data : null;
   const alertData = alerts.success && alerts.data ? alerts.data : [];
-  const overdueData = topOverdue.success && topOverdue.data ? topOverdue.data : [];
-  const paymentData = recentPayments.success && recentPayments.data ? recentPayments.data : [];
+  const overdueData =
+    topOverdue.success && topOverdue.data
+      ? topOverdue.data
+      : {
+          items: [],
+          totals: { memberCount: 0, chargeCount: 0, totalOpenAmount: 0 }
+        };
+  const paymentData =
+    recentPayments.success && recentPayments.data ? recentPayments.data : [];
   const isClosed = periodStatus.success ? periodStatus.closed : false;
 
   return (
@@ -65,7 +93,10 @@ export default async function OverviewPage() {
         {/* Period closed badge */}
         {isClosed && (
           <div className='flex items-center gap-2'>
-            <Badge variant='secondary' className='gap-1 bg-amber-100 text-amber-800 hover:bg-amber-100'>
+            <Badge
+              variant='secondary'
+              className='gap-1 bg-amber-100 text-amber-800 hover:bg-amber-100'
+            >
               <IconLock className='h-3 w-3' />
               Período Encerrado
             </Badge>

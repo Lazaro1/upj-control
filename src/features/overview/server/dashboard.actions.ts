@@ -2,16 +2,30 @@
 
 import { prisma } from '@/lib/db';
 import { auth } from '@clerk/nextjs/server';
+import {
+  calcDaysOverdue,
+  getOverdueOpenAmount,
+  getTodayInOrgTimezone,
+  OVERDUE_CHARGE_STATUSES,
+  overdueChargeSelect,
+  overdueChargeWithCompetenceSelect,
+  roundMoney,
+  summarizeOverdueCharges
+} from '@/lib/delinquency';
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
+
+export type KPIVariationUnit = 'percent' | 'percentagePoints' | 'absolute';
 
 export interface KPICard {
   label: string;
   value: number;
   formattedValue: string;
-  variation: number | null; // % vs. mês anterior, null se não houver dado
+  variation: number | null; // vs. mês anterior, null se não houver dado
+  variationUnit: KPIVariationUnit;
   variationLabel: string;
   trend: 'up' | 'down' | 'neutral';
+  positiveIsGood: boolean;
   icon: string;
 }
 
@@ -53,6 +67,15 @@ export interface TopOverdueItem {
   overdueCount: number;
   oldestDueDate: string;
   daysOverdue: number;
+}
+
+export interface TopOverdueData {
+  items: TopOverdueItem[];
+  totals: {
+    memberCount: number;
+    chargeCount: number;
+    totalOpenAmount: number;
+  };
 }
 
 export interface RecentPaymentItem {
@@ -112,6 +135,7 @@ export async function getDashboardKPIs(
     const current = getMonthRange(month, year);
     const prev = getPreviousMonth(month, year);
     const prevRange = getMonthRange(prev.month, prev.year);
+    const todayRef = getTodayInOrgTimezone();
 
     // ── Current month queries ──
     const [
@@ -123,11 +147,12 @@ export async function getDashboardKPIs(
       currentPaidCharges,
       currentTotalCharges,
       currentActiveMembers,
+      newMembersThisMonth,
       prevRevenue,
       prevCharged,
       prevCashIn,
       prevCashOut,
-      prevActiveMembers,
+      newMembersPrevMonth,
       prevPaidCharges,
       prevTotalCharges
     ] = await Promise.all([
@@ -145,14 +170,13 @@ export async function getDashboardKPIs(
         },
         _sum: { amount: true }
       }),
-      // Overdue (pending charges past due date)
-      prisma.charge.aggregate({
+      // Overdue (open balance on past-due charges)
+      prisma.charge.findMany({
         where: {
-          status: 'pendente',
-          dueDate: { lt: new Date() }
+          status: { in: [...OVERDUE_CHARGE_STATUSES] },
+          dueDate: { lt: todayRef }
         },
-        _sum: { amount: true },
-        _count: true
+        select: overdueChargeSelect
       }),
       // Cash in
       prisma.cashTransaction.aggregate({
@@ -185,6 +209,11 @@ export async function getDashboardKPIs(
       }),
       // Active members
       prisma.member.count({ where: { status: 'ativo' } }),
+      prisma.member.count({
+        where: {
+          joinedAt: { gte: current.start, lt: current.end }
+        }
+      }),
 
       // ── Previous month queries ──
       prisma.payment.aggregate({
@@ -215,8 +244,7 @@ export async function getDashboardKPIs(
       }),
       prisma.member.count({
         where: {
-          status: 'ativo',
-          joinedAt: { lt: prevRange.start }
+          joinedAt: { gte: prevRange.start, lt: prevRange.end }
         }
       }),
       prisma.charge.count({
@@ -237,7 +265,8 @@ export async function getDashboardKPIs(
     const prevRevenueVal = Number(prevRevenue._sum.amount || 0);
     const charged = Number(currentCharged._sum.amount || 0);
     const prevChargedVal = Number(prevCharged._sum.amount || 0);
-    const overdue = Number(currentOverdue._sum.amount || 0);
+    const { totalOpenAmount: overdue, chargeCount: overdueCount } =
+      summarizeOverdueCharges(currentOverdue);
     const cashIn = Number(currentCashIn._sum.amount || 0);
     const cashOut = Number(currentCashOut._sum.amount || 0);
     const prevCashInVal = Number(prevCashIn._sum.amount || 0);
@@ -245,7 +274,8 @@ export async function getDashboardKPIs(
     const cashBalance = cashIn - cashOut;
     const prevCashBalance = prevCashInVal - prevCashOutVal;
     const activeMembers = currentActiveMembers;
-    const prevActiveMembersVal = prevActiveMembers;
+    const newMembersThisMonthVal = newMembersThisMonth;
+    const newMembersPrevMonthVal = newMembersPrevMonth;
 
     // Compliance rate
     const complianceRate =
@@ -253,20 +283,17 @@ export async function getDashboardKPIs(
         ? (currentPaidCharges / currentTotalCharges) * 100
         : 100;
     const prevComplianceRate =
-      prevTotalCharges > 0
-        ? (prevPaidCharges / prevTotalCharges) * 100
-        : 100;
+      prevTotalCharges > 0 ? (prevPaidCharges / prevTotalCharges) * 100 : 100;
 
     // ── Variation calculation ──
     const revenueVar = calcVariation(revenue, prevRevenueVal);
     const chargedVar = calcVariation(charged, prevChargedVal);
     const cashBalanceVar = calcVariation(cashBalance, prevCashBalance);
     const complianceVar = complianceRate - prevComplianceRate;
-    const membersVar = activeMembers - prevActiveMembersVal;
-
-    // Overdue variation — compare with previous month's overdue
-    // For simplicity, we show absolute value and note it's total overdue
-    const overdueVar: number | null = null; // No direct previous comparison for total overdue
+    const newMembersVar =
+      newMembersPrevMonthVal > 0 || newMembersThisMonthVal > 0
+        ? newMembersThisMonthVal - newMembersPrevMonthVal
+        : null;
 
     const data: DashboardKPIs = {
       revenue: {
@@ -274,8 +301,12 @@ export async function getDashboardKPIs(
         value: revenue,
         formattedValue: formatCurrency(revenue),
         variation: revenueVar,
-        variationLabel: revenueVar !== null ? `vs. mês anterior` : 'sem dados anteriores',
-        trend: revenueVar !== null ? (revenueVar >= 0 ? 'up' : 'down') : 'neutral',
+        variationUnit: 'percent',
+        variationLabel:
+          revenueVar !== null ? 'vs. mês anterior' : 'sem dados anteriores',
+        trend:
+          revenueVar !== null ? (revenueVar >= 0 ? 'up' : 'down') : 'neutral',
+        positiveIsGood: true,
         icon: 'trendingUp'
       },
       charged: {
@@ -283,26 +314,45 @@ export async function getDashboardKPIs(
         value: charged,
         formattedValue: formatCurrency(charged),
         variation: chargedVar,
-        variationLabel: chargedVar !== null ? 'vs. mês anterior' : 'sem dados anteriores',
-        trend: chargedVar !== null ? (chargedVar >= 0 ? 'up' : 'down') : 'neutral',
+        variationUnit: 'percent',
+        variationLabel:
+          chargedVar !== null ? 'vs. mês anterior' : 'sem dados anteriores',
+        trend:
+          chargedVar !== null ? (chargedVar >= 0 ? 'up' : 'down') : 'neutral',
+        positiveIsGood: true,
         icon: 'receipt'
       },
       overdue: {
         label: 'Total em Atraso',
         value: overdue,
         formattedValue: formatCurrency(overdue),
-        variation: overdueVar,
-        variationLabel: 'cobranças vencidas pendentes',
-        trend: 'down' as const, // Lower is better
+        variation: null,
+        variationUnit: 'percent',
+        variationLabel:
+          overdueCount === 1
+            ? '1 cobrança vencida pendente'
+            : `${overdueCount} cobranças vencidas pendentes`,
+        trend: 'neutral',
+        positiveIsGood: false,
         icon: 'alertTriangle'
       },
       cashBalance: {
-        label: 'Saldo do Caixa',
+        label: 'Saldo do Período',
         value: cashBalance,
         formattedValue: formatCurrency(cashBalance),
         variation: cashBalanceVar,
-        variationLabel: cashBalanceVar !== null ? 'vs. mês anterior' : 'sem dados anteriores',
-        trend: cashBalance >= 0 ? 'up' : 'down',
+        variationUnit: 'percent',
+        variationLabel:
+          cashBalanceVar !== null ? 'vs. mês anterior' : 'sem dados anteriores',
+        trend:
+          cashBalanceVar !== null
+            ? cashBalanceVar >= 0
+              ? 'up'
+              : 'down'
+            : cashBalance >= 0
+              ? 'up'
+              : 'down',
+        positiveIsGood: true,
         icon: 'scale'
       },
       complianceRate: {
@@ -310,17 +360,33 @@ export async function getDashboardKPIs(
         value: complianceRate,
         formattedValue: `${complianceRate.toFixed(1)}%`,
         variation: complianceVar,
-        variationLabel: 'pontos percentuais vs. mês anterior',
+        variationUnit: 'percentagePoints',
+        variationLabel: 'vs. mês anterior',
         trend: complianceVar >= 0 ? 'up' : 'down',
+        positiveIsGood: true,
         icon: 'check'
       },
       activeMembers: {
         label: 'Membros Ativos',
         value: activeMembers,
         formattedValue: String(activeMembers),
-        variation: membersVar !== 0 ? (membersVar / (prevActiveMembersVal || 1)) * 100 : null,
-        variationLabel: membersVar > 0 ? `+${membersVar} este mês` : membersVar < 0 ? `${membersVar} este mês` : 'sem alteração',
-        trend: membersVar >= 0 ? 'up' : 'down',
+        variation: newMembersThisMonthVal > 0 ? newMembersThisMonthVal : null,
+        variationUnit: 'absolute',
+        variationLabel:
+          newMembersThisMonthVal === 1
+            ? '1 novo ingresso este mês'
+            : newMembersThisMonthVal > 1
+              ? 'novos ingressos este mês'
+              : newMembersVar !== null && newMembersVar < 0
+                ? 'menos ingressos que no mês anterior'
+                : 'sem novos ingressos',
+        trend:
+          newMembersVar !== null
+            ? newMembersVar >= 0
+              ? 'up'
+              : 'down'
+            : 'neutral',
+        positiveIsGood: true,
         icon: 'usersGroup'
       }
     };
@@ -424,29 +490,33 @@ export async function getDashboardCharts(
       }));
 
     // ── Monthly overdue trend (last 12 months) ──
+    const todayRef = getTodayInOrgTimezone();
+    const overdueChargesForChart = await prisma.charge.findMany({
+      where: {
+        status: { in: [...OVERDUE_CHARGE_STATUSES] },
+        dueDate: { lt: todayRef }
+      },
+      select: overdueChargeWithCompetenceSelect
+    });
+
     const overdueMonths: MonthlyOverduePoint[] = [];
     for (let i = 11; i >= 0; i--) {
       const d = new Date(year, month - 1 - i, 1);
       const m = d.getMonth() + 1;
       const y = d.getFullYear();
+      const range = getMonthRange(m, y);
 
-      const overdueData = await prisma.charge.aggregate({
-        where: {
-          status: 'pendente',
-          competenceDate: {
-            gte: new Date(y, m - 1, 1),
-            lt: new Date(y, m, 1)
-          },
-          dueDate: { lt: new Date() }
-        },
-        _sum: { amount: true },
-        _count: true
-      });
+      const monthCharges = overdueChargesForChart.filter(
+        (charge) =>
+          charge.competenceDate >= range.start &&
+          charge.competenceDate < range.end
+      );
+      const monthSummary = summarizeOverdueCharges(monthCharges);
 
       overdueMonths.push({
         month: `${String(m).padStart(2, '0')}/${y}`,
-        overdueAmount: Number(overdueData._sum.amount || 0),
-        overdueCount: overdueData._count
+        overdueAmount: monthSummary.totalOpenAmount,
+        overdueCount: monthSummary.chargeCount
       });
     }
 
@@ -490,8 +560,19 @@ export async function getDashboardAlerts(
 
     if (!prevClosing) {
       const monthNames = [
-        '', 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+        '',
+        'Janeiro',
+        'Fevereiro',
+        'Março',
+        'Abril',
+        'Maio',
+        'Junho',
+        'Julho',
+        'Agosto',
+        'Setembro',
+        'Outubro',
+        'Novembro',
+        'Dezembro'
       ];
       alerts.push({
         type: 'warning',
@@ -517,7 +598,8 @@ export async function getDashboardAlerts(
     ]);
 
     if (totalCharges > 0) {
-      const delinquencyRate = ((totalCharges - paidCharges) / totalCharges) * 100;
+      const delinquencyRate =
+        ((totalCharges - paidCharges) / totalCharges) * 100;
       if (delinquencyRate > 30) {
         alerts.push({
           type: 'danger',
@@ -545,12 +627,13 @@ export async function getDashboardAlerts(
       })
     ]);
 
-    const balance = Number(cashIn._sum.amount || 0) - Number(cashOut._sum.amount || 0);
+    const balance =
+      Number(cashIn._sum.amount || 0) - Number(cashOut._sum.amount || 0);
     if (balance < 0) {
       alerts.push({
         type: 'danger',
-        title: 'Saldo negativo no caixa',
-        description: `O saldo do caixa neste mês está ${formatCurrency(balance)}. Verifique as saídas e planeje ajustes.`
+        title: 'Saldo negativo no período',
+        description: `O saldo do período está em ${formatCurrency(balance)}. Verifique as saídas e planeje ajustes.`
       });
     }
 
@@ -565,34 +648,53 @@ export async function getDashboardAlerts(
 
 export async function getTopOverdue(
   limit = 10
-): Promise<{ success: boolean; data?: TopOverdueItem[]; error?: string }> {
+): Promise<{ success: boolean; data?: TopOverdueData; error?: string }> {
   try {
     const { orgId } = await auth();
     if (!orgId) return { success: false, error: 'Não autorizado' };
 
+    const todayRef = getTodayInOrgTimezone();
+
     const overdueCharges = await prisma.charge.findMany({
       where: {
-        status: 'pendente',
-        dueDate: { lt: new Date() }
+        status: { in: [...OVERDUE_CHARGE_STATUSES] },
+        dueDate: { lt: todayRef }
       },
       include: {
         member: {
           select: { id: true, fullName: true }
+        },
+        paymentAllocations: {
+          select: { allocatedAmount: true }
         }
       },
       orderBy: { dueDate: 'asc' }
     });
 
-    // Group by member
     const memberMap = new Map<
       string,
-      { memberId: string; memberName: string; totalOverdue: number; overdueCount: number; oldestDueDate: Date }
+      {
+        memberId: string;
+        memberName: string;
+        totalOverdue: number;
+        overdueCount: number;
+        oldestDueDate: Date;
+      }
     >();
 
+    let chargeCount = 0;
+    let totalOpenAmount = 0;
+
     for (const charge of overdueCharges) {
+      const openAmount = getOverdueOpenAmount(charge);
+      if (openAmount <= 0.01) continue;
+
+      chargeCount += 1;
+      totalOpenAmount = roundMoney(totalOpenAmount + openAmount);
+
       const existing = memberMap.get(charge.member.id);
       if (existing) {
-        existing.totalOverdue += Number(charge.amount);
+        existing.totalOverdue = roundMoney(existing.totalOverdue + openAmount);
         existing.overdueCount += 1;
         if (charge.dueDate < existing.oldestDueDate) {
           existing.oldestDueDate = charge.dueDate;
@@ -601,16 +703,20 @@ export async function getTopOverdue(
         memberMap.set(charge.member.id, {
           memberId: charge.member.id,
           memberName: charge.member.fullName,
-          totalOverdue: Number(charge.amount),
+          totalOverdue: openAmount,
           overdueCount: 1,
           oldestDueDate: charge.dueDate
         });
       }
     }
 
-    const now = new Date();
-    const result: TopOverdueItem[] = Array.from(memberMap.values())
-      .sort((a, b) => b.totalOverdue - a.totalOverdue)
+    const items: TopOverdueItem[] = Array.from(memberMap.values())
+      .sort((a, b) => {
+        if (b.totalOverdue !== a.totalOverdue) {
+          return b.totalOverdue - a.totalOverdue;
+        }
+        return b.overdueCount - a.overdueCount;
+      })
       .slice(0, limit)
       .map((item) => ({
         memberId: item.memberId,
@@ -618,12 +724,20 @@ export async function getTopOverdue(
         totalOverdue: item.totalOverdue,
         overdueCount: item.overdueCount,
         oldestDueDate: item.oldestDueDate.toISOString(),
-        daysOverdue: Math.floor(
-          (now.getTime() - item.oldestDueDate.getTime()) / (1000 * 60 * 60 * 24)
-        )
+        daysOverdue: calcDaysOverdue(item.oldestDueDate, todayRef)
       }));
 
-    return { success: true, data: result };
+    return {
+      success: true,
+      data: {
+        items,
+        totals: {
+          memberCount: memberMap.size,
+          chargeCount,
+          totalOpenAmount
+        }
+      }
+    };
   } catch (error: any) {
     console.error('Error fetching top overdue:', error);
     return { success: false, error: error.message };
@@ -669,7 +783,12 @@ export async function getRecentPayments(
 export async function getDashboardPeriodStatus(
   month: number,
   year: number
-): Promise<{ success: boolean; closed?: boolean; closedAt?: string; error?: string }> {
+): Promise<{
+  success: boolean;
+  closed?: boolean;
+  closedAt?: string;
+  error?: string;
+}> {
   try {
     const closing = await prisma.periodClosing.findUnique({
       where: {

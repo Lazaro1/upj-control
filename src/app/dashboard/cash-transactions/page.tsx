@@ -8,7 +8,7 @@ import { buttonVariants } from '@/components/ui/button';
 import { IconPlus } from '@tabler/icons-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import { assertFinancialWritePage } from '@/lib/auth/roles';
+import { assertFinancialWritePage } from '@/lib/auth/roles.server';
 
 export const metadata = {
   title: 'Dashboard: Caixa Geral'

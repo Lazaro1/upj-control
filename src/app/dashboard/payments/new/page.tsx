@@ -1,7 +1,7 @@
 import PageContainer from '@/components/layout/page-container';
 import { PaymentForm } from '@/features/payments/components/payment-form';
 import { prisma } from '@/lib/db';
-import { assertFinancialWritePage } from '@/lib/auth/roles';
+import { assertFinancialWritePage } from '@/lib/auth/roles.server';
 
 export const metadata = {
   title: 'Dashboard: Registrar Novo Pagamento'

@@ -7,6 +7,7 @@ import {
   TableHeader,
   TableRow
 } from '@/components/ui/table';
+import { formatPaymentMethod } from '@/lib/payment-methods';
 
 interface RecentPaymentItem {
   paymentId: string;
@@ -24,23 +25,6 @@ const formatCurrency = (value: number) =>
 
 const formatDate = (dateStr: string) =>
   new Date(dateStr).toLocaleDateString('pt-BR');
-
-const methodMap: Record<string, string> = {
-  pix: 'Pix',
-  dinheiro: 'Dinheiro',
-  cartao_credito: 'Cartão de Crédito',
-  cartao_debito: 'Cartão de Débito',
-  boleto: 'Boleto',
-  transferencia: 'Transferência',
-  deposito: 'Depósito',
-  cheque: 'Cheque'
-};
-
-function formatPaymentMethod(method: string | null): string {
-  if (!method) return '-';
-  const lower = method.toLowerCase().replace(/\s+/g, '_');
-  return methodMap[lower] || method;
-}
 
 export default function DashboardRecentPayments({
   data
@@ -84,7 +68,9 @@ export default function DashboardRecentPayments({
                       {formatDate(item.paymentDate)}
                     </TableCell>
                     <TableCell className='text-right'>
-                      {formatPaymentMethod(item.paymentMethod)}
+                      {item.paymentMethod
+                        ? formatPaymentMethod(item.paymentMethod)
+                        : '-'}
                     </TableCell>
                   </TableRow>
                 ))}

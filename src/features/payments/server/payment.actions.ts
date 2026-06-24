@@ -9,9 +9,12 @@ import {
 } from '../schemas/payment.schema';
 import { Prisma } from '@prisma/client';
 import { writeAuditLog } from '@/features/audit-logs/server/audit-log-writer';
-import { requireFinancialWrite } from '@/lib/auth/roles';
+import { requireFinancialWrite } from '@/lib/auth/roles.server';
 import { normalizeReversePaymentReason } from './reverse-payment-reason';
-import { requireOpenPeriod, extractMonthYear } from '@/features/period-closing/server/period-guard';
+import {
+  requireOpenPeriod,
+  extractMonthYear
+} from '@/features/period-closing/server/period-guard';
 
 export async function getPayments(
   page = 1,
@@ -156,23 +159,26 @@ export async function getPendingChargesByMember(memberId: string) {
       orderBy: { dueDate: 'asc' }
     });
 
-    const parsed = charges.map((c) => {
-      const totalPaid = c.paymentAllocations.reduce(
-        (acc, alloc) => acc + Number(alloc.allocatedAmount),
-        0
-      );
-      return {
-        id: c.id,
-        dueDate: c.dueDate.toISOString(),
-        competenceDate: c.competenceDate.toISOString(),
-        amount: Number(c.amount),
-        alreadyPaid: totalPaid,
-        remainingAmount: Number(c.amount) - totalPaid,
-        status: c.status,
-        description: c.description,
-        chargeTypeName: c.chargeType.name
-      };
-    });
+    const parsed = charges
+      .map((c) => {
+        const totalPaid = c.paymentAllocations.reduce(
+          (acc, alloc) => acc + Number(alloc.allocatedAmount),
+          0
+        );
+        const remainingAmount = Number(c.amount) - totalPaid;
+        return {
+          id: c.id,
+          dueDate: c.dueDate.toISOString(),
+          competenceDate: c.competenceDate.toISOString(),
+          amount: Number(c.amount),
+          alreadyPaid: totalPaid,
+          remainingAmount,
+          status: c.status,
+          description: c.description,
+          chargeTypeName: c.chargeType.name
+        };
+      })
+      .filter((c) => c.remainingAmount > 0.01);
 
     return { success: true, data: parsed };
   } catch (error: any) {
@@ -187,7 +193,9 @@ export async function createPayment(data: PaymentFormValues) {
     const validatedData = paymentSchema.parse(data);
 
     // Proteção de período fechado — verificar data do pagamento
-    const { month, year } = extractMonthYear(new Date(validatedData.paymentDate));
+    const { month, year } = extractMonthYear(
+      new Date(validatedData.paymentDate)
+    );
     await requireOpenPeriod(month, year);
 
     // Validação de segurança matemática
@@ -214,7 +222,8 @@ export async function createPayment(data: PaymentFormValues) {
           where: { id: alloc.chargeId },
           include: { paymentAllocations: true }
         });
-        if (!charge) throw new Error(`Cobrança ${alloc.chargeId} não encontrada.`);
+        if (!charge)
+          throw new Error(`Cobrança ${alloc.chargeId} não encontrada.`);
 
         const totalPaid = charge.paymentAllocations.reduce(
           (sum, pa) => sum + Number(pa.allocatedAmount),
@@ -303,6 +312,7 @@ export async function createPayment(data: PaymentFormValues) {
     revalidatePath('/dashboard/payments');
     revalidatePath('/dashboard/charges');
     revalidatePath('/dashboard/portal');
+    revalidatePath('/dashboard/overview');
     return { success: true };
   } catch (error: any) {
     console.error('Error creating payment:', error);
@@ -401,6 +411,7 @@ export async function reversePayment(paymentId: string, reason: string) {
     revalidatePath('/dashboard/payments');
     revalidatePath('/dashboard/charges');
     revalidatePath('/dashboard/portal');
+    revalidatePath('/dashboard/overview');
 
     return { success: true };
   } catch (error: any) {

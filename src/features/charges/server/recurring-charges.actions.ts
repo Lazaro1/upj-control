@@ -4,7 +4,7 @@ import { prisma } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import { format } from 'date-fns';
 import { writeAuditLog } from '@/features/audit-logs/server/audit-log-writer';
-import { requireFinancialWrite } from '@/lib/auth/roles';
+import { requireFinancialWrite } from '@/lib/auth/roles.server';
 
 export async function getRecurringChargeTypes() {
   const types = await prisma.chargeType.findMany({

@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { IconPlus } from '@tabler/icons-react';
 import type { SearchParams } from 'nuqs/server';
-import { assertFinancialWritePage } from '@/lib/auth/roles';
+import { assertFinancialWritePage } from '@/lib/auth/roles.server';
 
 export const metadata = {
   title: 'Tipos de Cobrança — UPJ Control'

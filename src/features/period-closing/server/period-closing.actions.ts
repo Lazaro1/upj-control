@@ -2,7 +2,8 @@
 
 import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/db';
-import { ORG_ROLES, requireFinancialWrite } from '@/lib/auth/roles';
+import { ORG_ROLES } from '@/lib/auth/roles';
+import { requireFinancialWrite } from '@/lib/auth/roles.server';
 import { writeAuditLog } from '@/features/audit-logs/server/audit-log-writer';
 import { revalidatePath } from 'next/cache';
 
@@ -157,7 +158,11 @@ export async function closePeriod(data: {
   competenceMonth: number;
   competenceYear: number;
   notes?: string;
-}): Promise<{ success: boolean; data?: PeriodClosingListItem; error?: string }> {
+}): Promise<{
+  success: boolean;
+  data?: PeriodClosingListItem;
+  error?: string;
+}> {
   try {
     const { userId, orgId } = await requireFinancialWrite();
 
@@ -179,7 +184,11 @@ export async function closePeriod(data: {
     }
 
     // Calcular resumo financeiro
-    const startDate = new Date(data.competenceYear, data.competenceMonth - 1, 1);
+    const startDate = new Date(
+      data.competenceYear,
+      data.competenceMonth - 1,
+      1
+    );
     const endDate = new Date(data.competenceYear, data.competenceMonth, 1);
 
     const chargesAgg = await prisma.charge.aggregate({

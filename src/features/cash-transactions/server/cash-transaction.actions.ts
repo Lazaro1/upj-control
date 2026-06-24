@@ -9,8 +9,11 @@ import {
 } from '../schemas/cash-transaction.schema';
 import { Prisma } from '@prisma/client';
 import { writeAuditLog } from '@/features/audit-logs/server/audit-log-writer';
-import { requireFinancialWrite } from '@/lib/auth/roles';
-import { requireOpenPeriod, extractMonthYear } from '@/features/period-closing/server/period-guard';
+import { requireFinancialWrite } from '@/lib/auth/roles.server';
+import {
+  requireOpenPeriod,
+  extractMonthYear
+} from '@/features/period-closing/server/period-guard';
 
 function parseDateAtBoundary(value: string, boundary: 'start' | 'end'): Date {
   const [year, month, day] = value.split('-').map(Number);
@@ -161,7 +164,9 @@ export async function createCashTransaction(data: CashTransactionFormValues) {
     const validatedData = cashTransactionSchema.parse(data);
 
     // Proteção de período fechado — verificar data da transação
-    const { month, year } = extractMonthYear(new Date(validatedData.transactionDate));
+    const { month, year } = extractMonthYear(
+      new Date(validatedData.transactionDate)
+    );
     await requireOpenPeriod(month, year);
 
     const transaction = await prisma.cashTransaction.create({

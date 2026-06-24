@@ -8,7 +8,7 @@ import {
   type MemberFormValues
 } from '../schemas/member.schema';
 import { auth } from '@clerk/nextjs/server';
-import { requireMemberWrite } from '@/lib/auth/roles';
+import { requireMemberWrite } from '@/lib/auth/roles.server';
 import { writeAuditLog } from '@/features/audit-logs/server/audit-log-writer';
 
 export async function getMembers({

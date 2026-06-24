@@ -1,7 +1,7 @@
 import PageContainer from '@/components/layout/page-container';
 import { ChargeForm } from '@/features/charges/components/charge-form';
 import { prisma } from '@/lib/db';
-import { assertFinancialWritePage } from '@/lib/auth/roles';
+import { assertFinancialWritePage } from '@/lib/auth/roles.server';
 import { notFound } from 'next/navigation';
 import { getChargeById } from '@/features/charges/server/charge.actions';
 

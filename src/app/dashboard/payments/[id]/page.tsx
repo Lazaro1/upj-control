@@ -11,7 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { IconArrowLeft, IconPrinter } from '@tabler/icons-react';
-import { assertFinancialWritePage } from '@/lib/auth/roles';
+import { assertFinancialWritePage } from '@/lib/auth/roles.server';
 import { ReversePaymentButton } from '@/features/payments/components/reverse-payment-button';
 
 export default async function PaymentReceiptPage({

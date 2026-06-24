@@ -1,5 +1,5 @@
 import PageContainer from '@/components/layout/page-container';
-import { assertFinancialWritePage } from '@/lib/auth/roles';
+import { assertFinancialWritePage } from '@/lib/auth/roles.server';
 import { PeriodClosingPage } from '@/features/period-closing/components/period-closing-page';
 import { listPeriodClosings } from '@/features/period-closing/server/period-closing.actions';
 

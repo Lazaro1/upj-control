@@ -1,7 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/db';
-import { requireFinancialWrite } from '@/lib/auth/roles';
+import { requireFinancialWrite } from '@/lib/auth/roles.server';
 import { revalidatePath } from 'next/cache';
 import { type Prisma } from '@prisma/client';
 import {

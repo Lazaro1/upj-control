@@ -28,15 +28,20 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription
+} from '@/components/ui/card';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  SelectValue
+} from '@/components/ui/select';
 
 import {
   chargeTypeSchema,
@@ -116,144 +121,178 @@ export function ChargeTypeForm({ initialData }: ChargeTypeFormProps) {
     }
   };
 
+  const isRecurring = form.watch('isRecurring');
+
   return (
-    <div className='mx-auto w-full'>
+    <div className='mx-auto w-full max-w-6xl'>
       <motion.div
         initial='hidden'
         animate='visible'
         variants={containerVariants}
         className='space-y-6'
       >
-        {/* Header Actions */}
-        <motion.div variants={itemVariants} className='flex items-center justify-between'>
-          <Button 
-            variant='ghost' 
+        <motion.div
+          variants={itemVariants}
+          className='flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between'
+        >
+          <div className='min-w-0'>
+            <h1 className='text-3xl font-bold tracking-tight'>
+              {isEditing ? 'Editar Tipo de Cobrança' : 'Novo Tipo de Cobrança'}
+            </h1>
+            <p className='text-muted-foreground mt-1 text-base'>
+              {isEditing
+                ? 'Atualize as configurações e o comportamento deste tipo de cobrança.'
+                : 'Crie uma categoria padronizada para as cobranças da loja.'}
+            </p>
+          </div>
+          <Button
+            variant='outline'
             type='button'
             onClick={() => router.push('/dashboard/charge-types')}
-            className='gap-2 text-muted-foreground hover:text-foreground'
+            className='border-primary/20 hover:bg-primary/5 shrink-0 gap-2 backdrop-blur-md'
           >
             <IconArrowLeft className='h-4 w-4' />
-            Voltar para lista
+            Voltar
           </Button>
         </motion.div>
 
-        <Card className='border-border/50 bg-card/40 backdrop-blur-xl shadow-lg'>
-          <CardHeader className='pb-6'>
-            <motion.div variants={itemVariants}>
-              <CardTitle className='text-3xl font-bold tracking-tight'>
-                {isEditing ? 'Editar Cobrança' : 'Nova Cobrança'}
-              </CardTitle>
-              <CardDescription className='text-base mt-2'>
-                {isEditing 
-                  ? 'Atualize as configurações e o comportamento deste tipo de cobrança.' 
-                  : 'Crie uma nova categoria padronizada para as cobranças da loja.'}
-              </CardDescription>
-            </motion.div>
-          </CardHeader>
-
-          <CardContent>
-            <Form form={form} onSubmit={form.handleSubmit(onSubmit)} className='space-y-8'>
-              
-              {/* Section 1: General Info */}
-              <motion.div variants={itemVariants} className='space-y-6'>
-                <div className='flex items-center gap-2 border-b pb-2'>
-                  <div className='flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary'>
-                    <IconFileDescription className='h-5 w-5' />
+        <Form form={form} onSubmit={form.handleSubmit(onSubmit)}>
+          <div className='grid grid-cols-1 gap-6 lg:grid-cols-12 lg:items-stretch'>
+            {/* Coluna esquerda: identificação */}
+            <motion.div variants={itemVariants} className='flex lg:col-span-7'>
+              <Card className='border-border/50 bg-card/40 flex h-full w-full flex-col shadow-lg backdrop-blur-xl'>
+                <CardHeader className='pb-4'>
+                  <div className='flex items-center gap-3'>
+                    <div className='bg-primary/10 text-primary flex h-9 w-9 items-center justify-center rounded-lg'>
+                      <IconFileDescription className='h-5 w-5' />
+                    </div>
+                    <div>
+                      <CardTitle className='text-lg'>
+                        Informações Gerais
+                      </CardTitle>
+                      <CardDescription>
+                        Nome, valor padrão e notas internas
+                      </CardDescription>
+                    </div>
                   </div>
-                  <h3 className='text-lg font-semibold tracking-tight'>Informações Gerais</h3>
-                </div>
+                </CardHeader>
+                <CardContent className='flex flex-1 flex-col space-y-6'>
+                  <div className='grid grid-cols-1 gap-6 md:grid-cols-12'>
+                    <FormField
+                      control={form.control}
+                      name='name'
+                      render={({ field }) => (
+                        <FormItem className='group md:col-span-8'>
+                          <FormLabel className='text-foreground/80 group-focus-within:text-primary transition-colors'>
+                            Nome da Cobrança
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              className='bg-background/50 focus:bg-background h-11 transition-all'
+                              placeholder='Ex: Mensalidade, Jóia de Iniciação...'
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                <div className='grid grid-cols-1 gap-6 md:grid-cols-3'>
+                    <FormField
+                      control={form.control}
+                      name='defaultAmount'
+                      render={({ field }) => (
+                        <FormItem className='group md:col-span-4'>
+                          <FormLabel className='text-foreground/80 group-focus-within:text-primary transition-colors'>
+                            Valor Padrão
+                          </FormLabel>
+                          <FormControl>
+                            <div className='relative flex items-center'>
+                              <div className='text-muted-foreground pointer-events-none absolute left-3 flex items-center'>
+                                <IconCurrencyReal className='h-4 w-4' />
+                              </div>
+                              <Input
+                                type='number'
+                                step='0.01'
+                                min='0'
+                                className='bg-background/50 focus:bg-background h-11 pl-9 transition-all'
+                                placeholder='0,00'
+                                {...field}
+                                value={field.value ?? ''}
+                                onChange={(e) =>
+                                  field.onChange(
+                                    e.target.value
+                                      ? parseFloat(e.target.value)
+                                      : undefined
+                                  )
+                                }
+                              />
+                            </div>
+                          </FormControl>
+                          <FormDescription>
+                            Deixe vazio para valor flexível.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
                   <FormField
                     control={form.control}
-                    name='name'
+                    name='description'
                     render={({ field }) => (
-                      <FormItem className='col-span-1 md:col-span-2 group'>
-                        <FormLabel className='text-foreground/80 group-focus-within:text-primary transition-colors'>Nome da Cobrança</FormLabel>
+                      <FormItem className='group flex flex-1 flex-col'>
+                        <FormLabel className='text-foreground/80 group-focus-within:text-primary transition-colors'>
+                          Descrição Interna (Opcional)
+                        </FormLabel>
                         <FormControl>
-                          <Input 
-                            className='h-11 bg-background/50 transition-all focus:bg-background' 
-                            placeholder='Ex: Mensalidade, Jóia de Iniciação...' 
-                            {...field} 
+                          <Textarea
+                            placeholder='Notas sobre quando e como cobrar...'
+                            className='bg-background/50 focus:bg-background min-h-[120px] flex-1 resize-none transition-all'
+                            {...field}
                           />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
+                </CardContent>
+              </Card>
+            </motion.div>
 
-                  <FormField
-                    control={form.control}
-                    name='defaultAmount'
-                    render={({ field }) => (
-                      <FormItem className='group'>
-                        <FormLabel className='text-foreground/80 group-focus-within:text-primary transition-colors'>Valor Padrão</FormLabel>
-                        <FormControl>
-                          <div className='relative flex items-center'>
-                            <div className='pointer-events-none absolute left-3 flex items-center text-muted-foreground'>
-                              <IconCurrencyReal className='h-4 w-4' />
-                            </div>
-                            <Input
-                              type='number'
-                              step='0.01'
-                              min='0'
-                              className='h-11 pl-9 bg-background/50 transition-all focus:bg-background'
-                              placeholder='0.00'
-                              {...field}
-                              value={field.value ?? ''}
-                              onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
-                            />
-                          </div>
-                        </FormControl>
-                        <FormDescription>
-                          Deixe vazio para valor flexível.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <FormField
-                  control={form.control}
-                  name='description'
-                  render={({ field }) => (
-                    <FormItem className='group'>
-                      <FormLabel className='text-foreground/80 group-focus-within:text-primary transition-colors'>Descrição Interna (Opcional)</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder='Notas sobre quando e como cobrar...'
-                          className='min-h-[100px] resize-none bg-background/50 transition-all focus:bg-background'
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </motion.div>
-
-              {/* Section 2: Settings */}
-              <motion.div variants={itemVariants} className='space-y-6 pt-4'>
-                <div className='flex items-center gap-2 border-b pb-2'>
-                  <div className='flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary'>
-                    <IconSettings className='h-5 w-5' />
+            {/* Coluna direita: comportamento e ações */}
+            <motion.div variants={itemVariants} className='flex lg:col-span-5'>
+              <Card className='border-border/50 bg-card/40 flex h-full w-full flex-col shadow-lg backdrop-blur-xl'>
+                <CardHeader className='pb-4'>
+                  <div className='flex items-center gap-3'>
+                    <div className='bg-primary/10 text-primary flex h-9 w-9 items-center justify-center rounded-lg'>
+                      <IconSettings className='h-5 w-5' />
+                    </div>
+                    <div>
+                      <CardTitle className='text-lg'>
+                        Comportamento Automático
+                      </CardTitle>
+                      <CardDescription>
+                        Recorrência e disponibilidade
+                      </CardDescription>
+                    </div>
                   </div>
-                  <h3 className='text-lg font-semibold tracking-tight'>Comportamento Automático</h3>
-                </div>
-
-                <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+                </CardHeader>
+                <CardContent className='flex flex-1 flex-col space-y-4'>
                   <FormField
                     control={form.control}
                     name='isRecurring'
                     render={({ field }) => (
-                      <FormItem className='flex flex-row items-center justify-between rounded-xl border bg-card/30 p-4 shadow-sm transition-colors hover:bg-card/60'>
-                        <div className='flex items-center gap-4'>
-                          <div className='flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/10 text-blue-500'>
+                      <FormItem className='bg-card/30 hover:bg-card/60 flex flex-row items-center justify-between rounded-xl border p-4 shadow-sm transition-colors'>
+                        <div className='flex min-w-0 items-center gap-3'>
+                          <div className='flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-500/10 text-blue-500'>
                             <IconRepeat className='h-5 w-5' />
                           </div>
-                          <div className='space-y-0.5'>
-                            <FormLabel className='text-base cursor-pointer'>Cobrança Recorrente</FormLabel>
+                          <div className='min-w-0 space-y-0.5'>
+                            <FormLabel className='cursor-pointer text-base'>
+                              Cobrança Recorrente
+                            </FormLabel>
                             <FormDescription className='text-xs'>
                               Gera fatura automaticamente
                             </FormDescription>
@@ -273,13 +312,17 @@ export function ChargeTypeForm({ initialData }: ChargeTypeFormProps) {
                     control={form.control}
                     name='active'
                     render={({ field }) => (
-                      <FormItem className='flex flex-row items-center justify-between rounded-xl border bg-card/30 p-4 shadow-sm transition-colors hover:bg-card/60'>
-                        <div className='flex items-center gap-4'>
-                          <div className={`flex h-10 w-10 items-center justify-center rounded-full ${field.value ? 'bg-emerald-500/10 text-emerald-500' : 'bg-muted text-muted-foreground'}`}>
+                      <FormItem className='bg-card/30 hover:bg-card/60 flex flex-row items-center justify-between rounded-xl border p-4 shadow-sm transition-colors'>
+                        <div className='flex min-w-0 items-center gap-3'>
+                          <div
+                            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${field.value ? 'bg-emerald-500/10 text-emerald-500' : 'bg-muted text-muted-foreground'}`}
+                          >
                             <IconCheck className='h-5 w-5' />
                           </div>
-                          <div className='space-y-0.5'>
-                            <FormLabel className='text-base cursor-pointer'>Tipo Ativo</FormLabel>
+                          <div className='min-w-0 space-y-0.5'>
+                            <FormLabel className='cursor-pointer text-base'>
+                              Tipo Ativo
+                            </FormLabel>
                             <FormDescription className='text-xs'>
                               Disponível para novos lançamentos
                             </FormDescription>
@@ -295,100 +338,117 @@ export function ChargeTypeForm({ initialData }: ChargeTypeFormProps) {
                     )}
                   />
 
-                  {form.watch('isRecurring') && (
+                  {isRecurring && (
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
-                      className='col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4'
+                      className='border-primary/20 bg-primary/5 space-y-4 overflow-hidden rounded-xl border border-dashed p-4'
                     >
-                      <FormField
-                        control={form.control}
-                        name='frequency'
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Frequência</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <FormControl>
-                                <SelectTrigger className='h-11'>
-                                  <SelectValue placeholder="Selecione a frequência" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="monthly">Mensal</SelectItem>
-                                <SelectItem value="quarterly">Trimestral</SelectItem>
-                                <SelectItem value="semiannual">Semestral</SelectItem>
-                                <SelectItem value="annual">Anual</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      <p className='text-muted-foreground text-xs font-medium tracking-wide uppercase'>
+                        Configuração da recorrência
+                      </p>
+                      <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2'>
+                        <FormField
+                          control={form.control}
+                          name='frequency'
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Frequência</FormLabel>
+                              <Select
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
+                              >
+                                <FormControl>
+                                  <SelectTrigger className='bg-background/50 h-11'>
+                                    <SelectValue placeholder='Selecione a frequência' />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value='monthly'>
+                                    Mensal
+                                  </SelectItem>
+                                  <SelectItem value='quarterly'>
+                                    Trimestral
+                                  </SelectItem>
+                                  <SelectItem value='semiannual'>
+                                    Semestral
+                                  </SelectItem>
+                                  <SelectItem value='annual'>Anual</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
 
-                      <FormField
-                        control={form.control}
-                        name='recurringAmount'
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Valor por Recorrência</FormLabel>
-                            <FormControl>
-                              <div className='relative flex items-center'>
-                                <div className='pointer-events-none absolute left-3 flex items-center text-muted-foreground'>
-                                  <IconCurrencyReal className='h-4 w-4' />
+                        <FormField
+                          control={form.control}
+                          name='recurringAmount'
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Valor por Recorrência</FormLabel>
+                              <FormControl>
+                                <div className='relative flex items-center'>
+                                  <div className='text-muted-foreground pointer-events-none absolute left-3 flex items-center'>
+                                    <IconCurrencyReal className='h-4 w-4' />
+                                  </div>
+                                  <Input
+                                    type='number'
+                                    step='0.01'
+                                    min='0'
+                                    className='bg-background/50 focus:bg-background h-11 pl-9 transition-all'
+                                    placeholder='0,00'
+                                    {...field}
+                                    value={field.value ?? ''}
+                                    onChange={(e) =>
+                                      field.onChange(
+                                        e.target.value
+                                          ? parseFloat(e.target.value)
+                                          : undefined
+                                      )
+                                    }
+                                  />
                                 </div>
-                                <Input
-                                  type='number'
-                                  step='0.01'
-                                  min='0'
-                                  className='h-11 pl-9 bg-background/50 transition-all focus:bg-background'
-                                  placeholder='0.00'
-                                  {...field}
-                                  value={field.value ?? ''}
-                                  onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
-                                />
-                              </div>
-                            </FormControl>
-                            <FormDescription>
-                              Se vazio, usará o Valor Padrão.
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                              </FormControl>
+                              <FormDescription>
+                                Se vazio, usará o Valor Padrão.
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
                     </motion.div>
                   )}
-                </div>
-              </motion.div>
 
-              <Separator className='my-8' />
-
-              {/* Actions */}
-              <motion.div variants={itemVariants} className='flex flex-col sm:flex-row gap-4 justify-end'>
-                <Button
-                  type='button'
-                  variant='outline'
-                  onClick={() => router.push('/dashboard/charge-types')}
-                  className='h-11 px-8'
-                >
-                  Cancelar
-                </Button>
-                <Button 
-                  type='submit' 
-                  disabled={form.formState.isSubmitting}
-                  className='h-11 px-8 shadow-md transition-all hover:shadow-lg'
-                >
-                  <IconDeviceFloppy className='mr-2 h-5 w-5' />
-                  {form.formState.isSubmitting
-                    ? 'Salvando...'
-                    : isEditing
-                      ? 'Salvar Alterações'
-                      : 'Cadastrar Tipo'}
-                </Button>
-              </motion.div>
-            </Form>
-          </CardContent>
-        </Card>
+                  <div className='border-border/50 mt-auto flex flex-col gap-3 border-t pt-6'>
+                    <Button
+                      type='button'
+                      variant='outline'
+                      onClick={() => router.push('/dashboard/charge-types')}
+                      className='h-11 w-full'
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      type='submit'
+                      disabled={form.formState.isSubmitting}
+                      className='h-11 w-full shadow-md transition-all hover:shadow-lg'
+                    >
+                      <IconDeviceFloppy className='mr-2 h-5 w-5' />
+                      {form.formState.isSubmitting
+                        ? 'Salvando...'
+                        : isEditing
+                          ? 'Salvar Alterações'
+                          : 'Cadastrar Tipo'}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </div>
+        </Form>
       </motion.div>
     </div>
   );
