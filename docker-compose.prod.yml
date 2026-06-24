@@ -1,0 +1,46 @@
+# Override de produção — use junto com docker-compose.yml na VPS:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml \
+#     --env-file .env.docker up -d --build
+#
+# Expõe apenas o Nginx Proxy Manager (80/443/81).
+# App e Postgres ficam na rede interna Docker.
+
+services:
+  postgres:
+    ports: !reset []
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-upj_secret}
+    networks:
+      - upj-network
+
+  app:
+    ports: !reset []
+    environment:
+      DATABASE_URL: postgresql://upj:${POSTGRES_PASSWORD:-upj_secret}@postgres:5432/upj_control?schema=public
+    networks:
+      - upj-network
+
+  nginx-proxy-manager:
+    image: jc21/nginx-proxy-manager:latest
+    container_name: upj-npm
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+      - '81:81'
+    environment:
+      TZ: ${ORG_TIMEZONE:-America/Sao_Paulo}
+    volumes:
+      - npm_data:/data
+      - npm_letsencrypt:/etc/letsencrypt
+    networks:
+      - upj-network
+
+networks:
+  upj-network:
+    driver: bridge
+
+volumes:
+  npm_data:
+  npm_letsencrypt:
