@@ -1,1 +1,7 @@
-bun run build
+if command -v bun >/dev/null 2>&1; then
+  bun run build
+elif command -v yarn >/dev/null 2>&1; then
+  yarn build
+else
+  npm run build
+fi
