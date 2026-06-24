@@ -21,13 +21,13 @@ export const navItems: NavItem[] = [
     access: { requireOrg: true, excludeRole: 'org:member' }
   },
   {
-    title: 'Meu Portal',
+    title: 'Início',
     url: '/dashboard/portal',
-    icon: 'profile',
+    icon: 'dashboard',
     isActive: false,
     shortcut: ['p', 'r'],
     items: [],
-    access: { requireOrg: true, role: 'org:member' }
+    access: { role: 'org:member' }
   },
   {
     title: 'Membros',

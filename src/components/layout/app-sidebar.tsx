@@ -37,6 +37,7 @@ import {
   IconBell,
   IconChevronRight,
   IconChevronsDown,
+  IconHome,
   IconLogout,
   IconUserCircle
 } from '@tabler/icons-react';
@@ -46,15 +47,39 @@ import { usePathname, useRouter } from 'next/navigation';
 import * as React from 'react';
 import { Icons } from '../icons';
 
+const ADMIN_ROLES = new Set(['org:admin', 'org:treasurer', 'org:manager']);
+
+function usePortalNavigation(pathname: string, orgRole: string | null | undefined) {
+  const isAdminUser = !!orgRole && ADMIN_ROLES.has(orgRole);
+  const isPortalContext =
+    pathname.startsWith('/dashboard/portal') || orgRole === 'org:member';
+  const showPortalHome = isPortalContext && !isAdminUser;
+
+  return {
+    showPortalHome,
+    homeUrl: showPortalHome ? '/dashboard/portal' : '/dashboard/overview',
+    appSubtitle: showPortalHome ? 'Portal do Irmão' : 'Tesouraria',
+    isHomeActive: showPortalHome
+      ? pathname.startsWith('/dashboard/portal')
+      : pathname.startsWith('/dashboard/overview')
+  };
+}
+
 export default function AppSidebar() {
   const pathname = usePathname();
-  const { isMobile } = useSidebar();
+  const { isMobile, setOpenMobile } = useSidebar();
   const { user } = useUser();
   const { orgRole } = useAuth();
   const router = useRouter();
   const filteredItems = useFilteredNavItems(navItems);
-  const appSubtitle =
-    orgRole === 'org:member' ? 'Portal do Irmão' : 'Tesouraria';
+  const { showPortalHome, homeUrl, appSubtitle, isHomeActive } =
+    usePortalNavigation(pathname, orgRole);
+
+  function closeMobileSidebar() {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  }
 
   return (
     <Sidebar collapsible='icon'>
@@ -83,9 +108,23 @@ export default function AppSidebar() {
       </SidebarHeader>
       <SidebarContent className='overflow-x-hidden'>
         <SidebarGroup>
-          <SidebarGroupLabel>Overview</SidebarGroupLabel>
+          <SidebarGroupLabel>Menu</SidebarGroupLabel>
           <SidebarMenu>
-            {filteredItems.map((item) => {
+            {showPortalHome && (
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild tooltip='Início' isActive={isHomeActive}>
+                  <Link href={homeUrl} onClick={closeMobileSidebar}>
+                    <IconHome className='h-4 w-4' />
+                    <span>Início</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )}
+            {filteredItems
+              .filter(
+                (item) => !showPortalHome || item.url !== '/dashboard/portal'
+              )
+              .map((item) => {
               const Icon = item.icon ? Icons[item.icon] : Icons.logo;
               return item?.items && item?.items?.length > 0 ? (
                 <Collapsible
@@ -180,6 +219,15 @@ export default function AppSidebar() {
                 <DropdownMenuSeparator />
 
                 <DropdownMenuGroup>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      closeMobileSidebar();
+                      router.push(homeUrl);
+                    }}
+                  >
+                    <IconHome className='mr-2 h-4 w-4' />
+                    Início
+                  </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => router.push('/dashboard/profile')}
                   >

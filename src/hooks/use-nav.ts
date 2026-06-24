@@ -63,7 +63,14 @@ export function useFilteredNavItems(items: NavItem[]) {
           return true;
         }
 
-        // Check requireOrg
+        // Check role
+        if (item.access.role) {
+          if (accessContext.role !== item.access.role) {
+            return false;
+          }
+        }
+
+        // Check requireOrg (after role — portal do irmão não depende de org ativa)
         if (item.access.requireOrg && !accessContext.hasOrg) {
           return false;
         }
@@ -74,16 +81,6 @@ export function useFilteredNavItems(items: NavItem[]) {
             return false;
           }
           if (!accessContext.permissions.includes(item.access.permission)) {
-            return false;
-          }
-        }
-
-        // Check role
-        if (item.access.role) {
-          if (!accessContext.hasOrg) {
-            return false;
-          }
-          if (accessContext.role !== item.access.role) {
             return false;
           }
         }
@@ -123,6 +120,13 @@ export function useFilteredNavItems(items: NavItem[]) {
               return true;
             }
 
+            // Check role
+            if (childItem.access.role) {
+              if (accessContext.role !== childItem.access.role) {
+                return false;
+              }
+            }
+
             // Check requireOrg
             if (childItem.access.requireOrg && !accessContext.hasOrg) {
               return false;
@@ -136,16 +140,6 @@ export function useFilteredNavItems(items: NavItem[]) {
               if (
                 !accessContext.permissions.includes(childItem.access.permission)
               ) {
-                return false;
-              }
-            }
-
-            // Check role
-            if (childItem.access.role) {
-              if (!accessContext.hasOrg) {
-                return false;
-              }
-              if (accessContext.role !== childItem.access.role) {
                 return false;
               }
             }

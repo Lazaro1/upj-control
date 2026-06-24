@@ -2,6 +2,7 @@ import { prisma } from '@/lib/db';
 import { auth } from '@clerk/nextjs/server';
 import { unstable_noStore as noStore } from 'next/cache';
 import { getChargeRemainingAmount } from '@/lib/charge-balance';
+import { getEffectiveStatus } from '@/features/member-portal/lib/transaction-status';
 
 export async function getMemberByClerkId() {
   const { userId } = await auth();
@@ -117,6 +118,8 @@ export async function getPortalTransactions({
   page?: number;
   limit?: number;
 }) {
+  noStore();
+
   const member = await getMemberByClerkId();
 
   if (!member) {
@@ -143,22 +146,40 @@ export async function getPortalTransactions({
   return {
     success: true,
     data: {
-      items: charges.map(c => ({
-        ...c,
-        amount: c.amount.toNumber(),
-        chargeType: c.chargeType ? {
-          ...c.chargeType,
-          defaultAmount: c.chargeType.defaultAmount?.toNumber() ?? null
-        } : null,
-        paymentAllocations: c.paymentAllocations.map(a => ({
-          ...a,
-          allocatedAmount: a.allocatedAmount.toNumber(),
-          payment: a.payment ? {
-            ...a.payment,
-            amount: a.payment.amount.toNumber()
-          } : null
-        }))
-      })),
+      items: charges.map((c) => {
+        const originalAmount = Number(c.amount);
+        const remainingAmount = getChargeRemainingAmount(c);
+
+        return {
+          id: c.id,
+          memberId: c.memberId,
+          competenceDate: c.competenceDate.toISOString(),
+          dueDate: c.dueDate.toISOString(),
+          description: c.description,
+          amount: originalAmount,
+          originalAmount,
+          remainingAmount,
+          status: c.status,
+          effectiveStatus: getEffectiveStatus(c.status, c.dueDate),
+          createdAt: c.createdAt.toISOString(),
+          chargeType: c.chargeType
+            ? {
+                id: c.chargeType.id,
+                name: c.chargeType.name
+              }
+            : null,
+          paymentAllocations: c.paymentAllocations.map((a) => ({
+            id: a.id,
+            allocatedAmount: Number(a.allocatedAmount),
+            payment: a.payment
+              ? {
+                  paymentDate: a.payment.paymentDate.toISOString(),
+                  paymentMethod: a.payment.paymentMethod
+                }
+              : null
+          }))
+        };
+      }),
       total,
       pageCount: Math.ceil(total / limit)
     }
